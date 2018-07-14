@@ -1,11 +1,7 @@
-#![feature(test)]
-
-extern crate test;
+//! Operations for already deduplicated slices.
 
 // FIXME allow to use #![no_std]
 use std::cmp::Ordering;
-
-pub mod dedup;
 
 pub struct UnionTwoSlices<'a, T: 'a> {
     a: &'a [T],
@@ -18,12 +14,6 @@ impl<'a, T: 'a> UnionTwoSlices<'a, T> {
     }
 }
 
-#[inline]
-fn skip_duplicates<'a, T: Eq>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    let count = slice.iter().take_while(|x| *x == elem).count();
-    &slice[count..]
-}
-
 impl<'a, T: 'a + Ord> Iterator for UnionTwoSlices<'a, T> {
     type Item = &'a T;
 
@@ -32,18 +22,18 @@ impl<'a, T: 'a + Ord> Iterator for UnionTwoSlices<'a, T> {
             match self.a[0].cmp(&self.b[0]) {
                 Ordering::Less => {
                     let ret = &self.a[0];
-                    self.a = skip_duplicates(self.a, &self.a[0]);
+                    self.a = &self.a[1..];
                     return Some(ret);
                 },
                 Ordering::Equal => {
                     let ret = &self.a[0];
-                    self.a = skip_duplicates(self.a, &self.a[0]);
-                    self.b = skip_duplicates(self.b, &self.b[0]);
+                    self.a = &self.a[1..];
+                    self.b = &self.b[1..];
                     return Some(ret);
                 },
                 Ordering::Greater => {
                     let ret = &self.b[0];
-                    self.b = skip_duplicates(self.b, &self.b[0]);
+                    self.b = &self.b[1..];
                     return Some(ret);
                 },
             }
@@ -51,12 +41,12 @@ impl<'a, T: 'a + Ord> Iterator for UnionTwoSlices<'a, T> {
 
         if !self.a.is_empty() {
             let ret = &self.a[0];
-            self.a = skip_duplicates(self.a, &self.a[0]);
+            self.a = &self.a[1..];
             Some(ret)
         }
         else if !self.b.is_empty() {
             let ret = &self.b[0];
-            self.b = skip_duplicates(self.b, &self.b[0]);
+            self.b = &self.b[1..];
             Some(ret)
         }
         else {
@@ -65,6 +55,7 @@ impl<'a, T: 'a + Ord> Iterator for UnionTwoSlices<'a, T> {
 
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -82,28 +73,8 @@ mod tests {
     }
 
     #[test]
-    fn union_two_slices_duplicates() {
-        let a = &[1, 2, 2, 3, 3];
-        let b = &[2, 3, 3, 4];
-
-        let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
-
-        assert_eq!(&union, &[1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn union_two_slices_duplicates_at_end() {
-        let a = &[1, 2, 3, 4];
-        let b = &[2, 3, 4];
-
-        let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
-
-        assert_eq!(&union, &[1, 2, 3, 4]);
-    }
-
-    #[test]
     fn union_two_slices_second_empty() {
-        let a = &[1, 2, 2, 3, 3];
+        let a = &[1, 2, 3];
         let b = &[];
 
         let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
@@ -114,7 +85,7 @@ mod tests {
     #[test]
     fn union_two_slices_first_empty() {
         let a = &[];
-        let b = &[2, 3, 3, 4];
+        let b = &[2, 3, 4];
 
         let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
 
@@ -123,8 +94,8 @@ mod tests {
 
     #[test]
     fn union_two_slices_same_elem() {
-        let a = &[1, 1, 1, 1];
-        let b = &[1, 1, 1, 1, 1];
+        let a = &[1];
+        let b = &[1];
 
         let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
 
@@ -136,17 +107,6 @@ mod tests {
         b.iter(|| {
             let a = &[1, 2, 3];
             let b = &[2, 3, 4];
-
-            let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
-            test::black_box(|| union);
-        });
-    }
-
-    #[bench]
-    fn bench_two_slices_duplicates(b: &mut Bencher) {
-        b.iter(|| {
-            let a = &[1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
-            let b = &[2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4];
 
             let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
             test::black_box(|| union);
