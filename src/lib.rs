@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 // FIXME allow to use #![no_std]
 use std::cmp::Ordering;
 
@@ -48,6 +52,7 @@ where T: Ord + Clone
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::Bencher;
 
     #[test]
     fn union_two_slices_easy() {
@@ -107,5 +112,27 @@ mod tests {
         let union_ = union_two_slices(a, b);
 
         assert_eq!(&union_, &[1]);
+    }
+
+    #[bench]
+    fn bench_two_slices_easy(b: &mut Bencher) {
+        b.iter(|| {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+
+            let union_ = union_two_slices(a, b);
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn bench_two_slices_duplicates(b: &mut Bencher) {
+        b.iter(|| {
+            let a = &[1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
+            let b = &[2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4];
+
+            let union_ = union_two_slices(a, b);
+            test::black_box(|| union_);
+        });
     }
 }
