@@ -103,12 +103,12 @@ mod tests {
     }
 
     #[bench]
-    fn bench_two_slices_easy(b: &mut Bencher) {
-        b.iter(|| {
-            let a = &[1, 2, 3];
-            let b = &[2, 3, 4];
+    fn bench_two_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (1..101).collect();
 
-            let union: Vec<_> = UnionTwoSlices::new(a, b).cloned().collect();
+        bench.iter(|| {
+            let union: Vec<_> = UnionTwoSlices::new(&a, &b).cloned().collect();
             test::black_box(|| union);
         });
     }
