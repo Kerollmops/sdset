@@ -15,6 +15,10 @@ impl<'a, T> OpBuilder<'a, T> {
         Self { slices: Vec::new() }
     }
 
+    pub fn from_vec(slices: Vec<&'a [T]>) -> Self {
+        Self { slices }
+    }
+
     pub fn with_capacity(capacity: usize) -> Self {
         Self { slices: Vec::with_capacity(capacity) }
     }
