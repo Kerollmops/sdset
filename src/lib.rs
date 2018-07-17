@@ -5,7 +5,7 @@ extern crate test;
 // FIXME allow to use #![no_std]
 use std::cmp::Ordering;
 
-pub mod dedup;
+pub mod clean;
 
 pub struct UnionTwoSlices<'a, T: 'a> {
     a: &'a [T],
@@ -132,7 +132,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_two_slices_easy(bench: &mut Bencher) {
+    fn bench_two_slices_big(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
 
