@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_two_slices_big(bench: &mut Bencher) {
+    fn union_bench_two_slices_big(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
 
