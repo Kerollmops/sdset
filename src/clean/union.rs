@@ -10,7 +10,6 @@ impl<'a, T> Union<'a, T> {
 
 impl<'a, T: Ord + Clone> Union<'a, T> {
     pub fn into_vec(mut self) -> Vec<T> {
-
         let mut output = match self.slices.first() {
             Some(slice) => Vec::with_capacity(slice.len()),
             None => Vec::new(),

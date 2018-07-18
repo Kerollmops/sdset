@@ -1,10 +1,12 @@
 //! Operations for already deduplicated and sorted slices.
 
 mod union;
+mod intersection;
 
 // FIXME allow to use #![no_std]
 use std::cmp::{self, Ordering};
 pub use self::union::Union;
+pub use self::intersection::Intersection;
 
 pub struct OpBuilder<'a, T: 'a> {
     slices: Vec<&'a [T]>,
@@ -38,6 +40,10 @@ impl<'a, T> OpBuilder<'a, T> {
 
     pub fn union(self) -> Union<'a, T> {
         Union::new(self.slices)
+    }
+
+    pub fn intersection(self) -> Intersection<'a, T> {
+        Intersection::new(self.slices)
     }
 }
 
