@@ -15,6 +15,8 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
             None => Vec::new(),
         };
 
+        // @Improvement: retrieve the two minimums and extend until
+        //               the second minimum is nt reached
         while let Some(min) = self.slices.iter().filter_map(|v| v.first()).min() {
             // save the element
             output.push(min.clone());
@@ -80,6 +82,17 @@ mod tests {
     fn bench_two_slices_big(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new(vec![&a, &b]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn bench_two_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
             let union_ = Union::new(vec![&a, &b]).into_vec();

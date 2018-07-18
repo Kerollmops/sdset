@@ -44,14 +44,14 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
         let mut output = Vec::new();
 
         while !base.is_empty() {
-            // @Improvement: advance each slice to something that is
-            //               always greater than the minimum found
             match others.iter().filter_map(|v| v.first()).min() {
                 Some(min) => {
                     let (before, after) = slice_to(base, min);
                     output.extend(before.iter().cloned());
                     *base = after;
 
+                    // @Improvement: advance each slice to something
+                    //               is different for each slice
                     for slice in others.iter_mut() {
                         *slice = offset_gt(slice, min);
                     }
@@ -136,7 +136,7 @@ mod tests {
     #[bench]
     fn bench_two_slices_big2(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (50..151).collect();
+        let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
             let union_ = Difference::new(vec![&a, &b]).into_vec();
