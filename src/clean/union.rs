@@ -42,6 +42,14 @@ mod tests {
     }
 
     #[test]
+    fn one_empty_slice() {
+        let a: &[i32] = &[];
+
+        let intersection_ = Union::new(vec![a]).into_vec();
+        assert_eq!(&intersection_[..], &[]);
+    }
+
+    #[test]
     fn one_slice() {
         let a = &[1, 2, 3];
 

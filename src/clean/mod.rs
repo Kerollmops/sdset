@@ -2,11 +2,13 @@
 
 mod union;
 mod intersection;
+mod difference;
 
 // FIXME allow to use #![no_std]
 use std::cmp::{self, Ordering};
 pub use self::union::Union;
 pub use self::intersection::Intersection;
+pub use self::difference::Difference;
 
 pub struct OpBuilder<'a, T: 'a> {
     slices: Vec<&'a [T]>,
@@ -44,6 +46,10 @@ impl<'a, T> OpBuilder<'a, T> {
 
     pub fn intersection(self) -> Intersection<'a, T> {
         Intersection::new(self.slices)
+    }
+
+    pub fn difference(self) -> Difference<'a, T> {
+        Difference::new(self.slices)
     }
 }
 

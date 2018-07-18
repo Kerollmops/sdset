@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::cmp;
 
 use self::Equality::*;
@@ -41,7 +40,7 @@ fn offset_eq<'a, T: 'a + Eq>(slice: &'a [T], elem: &'a T) -> &'a [T] {
     }
 }
 
-impl<'a, T: Debug + Ord + Clone> Intersection<'a, T> {
+impl<'a, T: Ord + Clone> Intersection<'a, T> {
     pub fn into_vec(mut self) -> Vec<T> {
         let mut output = Vec::new();
 
