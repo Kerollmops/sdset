@@ -1,3 +1,5 @@
+use self::Minimums::*;
+
 pub struct Union<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
@@ -8,6 +10,36 @@ impl<'a, T> Union<'a, T> {
     }
 }
 
+enum Minimums<T> {
+    Nothing,
+    One(T),
+    Two(T, T),
+}
+
+/// Returns the index of the slice that contains the minimum and
+/// the minimum of another slice.
+#[inline]
+fn two_minimums<'a, T>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)>
+where T: 'a + Ord
+{
+    let mut minimums: Minimums<(_, &T)> = Nothing;
+
+    for (index, slice) in slices.iter().enumerate().filter(|(_, s)| !s.is_empty()) {
+        let current = (index, &slice[0]);
+        let (_, min) = current;
+
+        minimums = match minimums {
+            One(f) => if min < f.1 { Two(current, f) } else { Two(f, current) },
+            Two(f, _) if min < f.1 => Two(current, f),
+            Two(f, s) if min < s.1 => Two(f, current),
+            Nothing => One(current),
+            mins => mins,
+        };
+    }
+
+    minimums
+}
+
 impl<'a, T: Ord + Clone> Union<'a, T> {
     pub fn into_vec(mut self) -> Vec<T> {
         let mut output = match self.slices.first() {
@@ -15,19 +47,27 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
             None => Vec::new(),
         };
 
-        // @Improvement: retrieve the two minimums and extend until
-        //               the second minimum is nt reached
-        while let Some(min) = self.slices.iter().filter_map(|v| v.first()).min() {
-            // save the element
-            output.push(min.clone());
-            // move slices forward
-            for slice in self.slices.iter_mut().filter(|s| !s.is_empty()) {
-                if slice[0] == *min {
-                    *slice = &slice[1..];
-                }
+        loop {
+            match two_minimums(&self.slices) {
+                Two((i, _), (_, s)) => {
+                    let len = output.len();
+                    output.extend(self.slices[i].iter().take_while(|&e| e <= s).cloned());
+                    let add = output.len() - len;
+                    self.slices[i] = &self.slices[i][add..];
+
+                    for slice in self.slices.iter_mut().filter(|s| !s.is_empty()) {
+                        if slice[0] == *s {
+                            *slice = &slice[1..];
+                        }
+                    }
+                },
+                One((i, _)) => {
+                    output.extend(self.slices[i].iter().cloned());
+                    break;
+                },
+                _ => break,
             }
         }
-
         output
     }
 }
@@ -56,6 +96,15 @@ mod tests {
         let a = &[1, 2, 3];
 
         let union_ = Union::new(vec![a]).into_vec();
+        assert_eq!(&union_[..], &[1, 2, 3]);
+    }
+
+    #[test]
+    fn two_slices_equal() {
+        let a = &[1, 2, 3];
+        let b = &[1, 2, 3];
+
+        let union_ = Union::new(vec![a, b]).into_vec();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
