@@ -101,6 +101,17 @@ mod tests {
     }
 
     #[bench]
+    fn bench_two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new(vec![&a, &b]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
     fn bench_btree_two_slices_big(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
