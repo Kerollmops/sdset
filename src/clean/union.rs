@@ -41,11 +41,10 @@ where T: 'a + Ord
 }
 
 impl<'a, T: Ord + Clone> Union<'a, T> {
-    pub fn into_vec(mut self) -> Vec<T> {
-        let mut output = match self.slices.first() {
-            Some(slice) => Vec::with_capacity(slice.len()),
-            None => Vec::new(),
-        };
+    pub fn extend_vec(mut self, output: &mut Vec<T>) {
+        if let Some(slice) = self.slices.first() {
+            output.reserve(slice.len());
+        }
 
         loop {
             match two_minimums(&self.slices) {
@@ -69,7 +68,12 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
                 Nothing => break,
             }
         }
-        output
+    }
+
+    pub fn into_vec(self) -> Vec<T> {
+        let mut vec = Vec::new();
+        self.extend_vec(&mut vec);
+        vec
     }
 }
 

@@ -19,13 +19,11 @@ fn offset_gt<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 }
 
 impl<'a, T: Ord + Clone> Difference<'a, T> {
-    pub fn into_vec(mut self) -> Vec<T> {
+    pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let (base, others) = match self.slices.split_first_mut() {
             Some(split) => split,
-            None => return Vec::new(),
+            None => return,
         };
-
-        let mut output = Vec::new();
 
         while !base.is_empty() {
             match others.iter().filter_map(|v| v.first()).min() {
@@ -47,8 +45,12 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
                 },
             }
         }
+    }
 
-        output
+    pub fn into_vec(self) -> Vec<T> {
+        let mut vec = Vec::new();
+        self.extend_vec(&mut vec);
+        vec
     }
 }
 

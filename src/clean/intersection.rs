@@ -41,9 +41,7 @@ fn offset_eq<'a, T: 'a + Eq>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 }
 
 impl<'a, T: Ord + Clone> Intersection<'a, T> {
-    pub fn into_vec(mut self) -> Vec<T> {
-        let mut output = Vec::new();
-
+    pub fn extend_vec(mut self, output: &mut Vec<T>) {
         'outer: loop {
             match test_equality(self.slices.iter().filter_map(|s| s.first())) {
                 Some(Equal(x)) => {
@@ -62,8 +60,12 @@ impl<'a, T: Ord + Clone> Intersection<'a, T> {
                 None => break,
             }
         }
+    }
 
-        output
+    pub fn into_vec(self) -> Vec<T> {
+        let mut vec = Vec::new();
+        self.extend_vec(&mut vec);
+        vec
     }
 }
 
