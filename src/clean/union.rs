@@ -65,7 +65,7 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
                     output.extend(self.slices[i].iter().cloned());
                     break;
                 },
-                _ => break,
+                Nothing => break,
             }
         }
         output

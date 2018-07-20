@@ -18,22 +18,6 @@ fn offset_gt<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
     }
 }
 
-/// Returns the slice but with its end truncated to an element
-/// that is equal to the one given in parameter.
-/// `elem` is not contained by the slice and is just after the right bound.
-#[inline]
-fn slice_to<'a, T: 'a + Eq>(slice: &'a [T], elem: &'a T) -> (&'a [T], &'a [T]) {
-    match slice.iter().position(|x| x == elem) {
-        Some(pos) => {
-            match slice.split_at(pos) {
-                (left, &[]) => (left, &[]),
-                (left, right) => (left, &right[1..]),
-            }
-        },
-        None => (slice, &[]),
-    }
-}
-
 impl<'a, T: Ord + Clone> Difference<'a, T> {
     pub fn into_vec(mut self) -> Vec<T> {
         let (base, others) = match self.slices.split_first_mut() {
@@ -46,12 +30,13 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
         while !base.is_empty() {
             match others.iter().filter_map(|v| v.first()).min() {
                 Some(min) => {
-                    let (before, after) = slice_to(base, min);
-                    output.extend(before.iter().cloned());
-                    *base = after;
+                    let len = output.len();
+                    output.extend(base.iter().take_while(|&x| x != min).cloned());
+                    let add = output.len() - len;
 
-                    // @Improvement: advance each slice to something
-                    //               is different for each slice
+                    *base = if add < base.len() { &base[add + 1..] } else { &[] };
+
+                    // @Improvement: advance each slice to something different
                     for slice in others.iter_mut() {
                         *slice = offset_gt(slice, min);
                     }
