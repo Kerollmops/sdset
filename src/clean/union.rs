@@ -51,10 +51,11 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
             match two_minimums(&self.slices) {
                 Two((i, _), (_, s)) => {
                     let len = output.len();
-                    output.extend(self.slices[i].iter().take_while(|&e| e <= s).cloned());
+                    output.extend(self.slices[i].iter().take_while(|&e| e < s).cloned());
                     let add = output.len() - len;
                     self.slices[i] = &self.slices[i][add..];
 
+                    output.push(s.clone());
                     for slice in self.slices.iter_mut().filter(|s| !s.is_empty()) {
                         if slice[0] == *s {
                             *slice = &slice[1..];
@@ -106,6 +107,15 @@ mod tests {
 
         let union_ = Union::new(vec![a, b]).into_vec();
         assert_eq!(&union_[..], &[1, 2, 3]);
+    }
+
+    #[test]
+    fn two_slices_little() {
+        let a = &[1];
+        let b = &[2];
+
+        let union_ = Union::new(vec![a, b]).into_vec();
+        assert_eq!(&union_[..], &[1, 2]);
     }
 
     #[test]
