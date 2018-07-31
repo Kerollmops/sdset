@@ -133,6 +133,17 @@ mod tests {
     }
 
     #[bench]
+    fn bench_two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+
+        bench.iter(|| {
+            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
     fn bench_btree_two_slices_big(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
@@ -156,6 +167,23 @@ mod tests {
 
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (51..151).collect();
+
+        let base = BTreeSet::from_iter(a);
+        let b = BTreeSet::from_iter(b);
+
+        bench.iter(|| {
+            let set: Vec<_> = base.difference(&b).cloned().collect();
+            test::black_box(|| set);
+        });
+    }
+
+    #[bench]
+    fn bench_btree_two_slices_big3(bench: &mut Bencher) {
+        use std::collections::BTreeSet;
+        use std::iter::FromIterator;
+
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
 
         let base = BTreeSet::from_iter(a);
         let b = BTreeSet::from_iter(b);

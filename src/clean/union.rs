@@ -16,8 +16,7 @@ enum Minimums<T> {
     Two(T, T),
 }
 
-/// Returns the index of the slice that contains the minimum and
-/// the minimum of another slice.
+/// Returns the index of the slices containing the minimum and the minimum values of two slices.
 #[inline]
 fn two_minimums<'a, T>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)>
 where T: 'a + Ord

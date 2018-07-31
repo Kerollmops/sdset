@@ -65,9 +65,9 @@ impl<'a, T: 'a> UnionTwoSlices<'a, T> {
 }
 
 impl<'a, T: 'a + Ord + Clone> UnionTwoSlices<'a, T> {
-    pub fn into_vec(mut self) -> Vec<T> {
+    pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let min_len = cmp::max(self.a.len(), self.b.len());
-        let mut output = Vec::with_capacity(min_len);
+        output.reserve(min_len);
 
         while !self.a.is_empty() && !self.b.is_empty() {
             match self.a[0].cmp(&self.b[0]) {
@@ -89,8 +89,12 @@ impl<'a, T: 'a + Ord + Clone> UnionTwoSlices<'a, T> {
 
         output.extend(self.a.iter().cloned());
         output.extend(self.b.iter().cloned());
+    }
 
-        output
+    pub fn into_vec(self) -> Vec<T> {
+        let mut vec = Vec::new();
+        self.extend_vec(&mut vec);
+        vec
     }
 }
 
@@ -148,6 +152,28 @@ mod tests {
         bench.iter(|| {
             let union: Vec<_> = UnionTwoSlices::new(&a, &b).into_vec();
             test::black_box(|| union);
+        });
+    }
+
+    #[bench]
+    fn union_bench_two_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (51..151).collect();
+
+        bench.iter(|| {
+            let union_ = UnionTwoSlices::new(&a, &b).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn union_bench_two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+
+        bench.iter(|| {
+            let union_ = UnionTwoSlices::new(&a, &b).into_vec();
+            test::black_box(|| union_);
         });
     }
 }
