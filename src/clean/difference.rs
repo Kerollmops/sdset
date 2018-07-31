@@ -41,7 +41,7 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
                     }
                 },
                 None => {
-                    output.extend(base.iter().cloned());
+                    output.extend_from_slice(base);
                     break;
                 },
             }
