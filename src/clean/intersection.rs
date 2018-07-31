@@ -145,13 +145,11 @@ mod tests {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
 
-        bench.iter(|| {
-            let mut set = BTreeSet::new();
-            for slice in vec![&a, &b] {
-                let slice = BTreeSet::from_iter(slice.into_iter().cloned());
-                set = set.difference(&slice).cloned().collect();
-            }
+        let a = BTreeSet::from_iter(a);
+        let b = BTreeSet::from_iter(b);
 
+        bench.iter(|| {
+            let set: Vec<_> = a.intersection(&b).cloned().collect();
             test::black_box(|| set);
         });
     }
