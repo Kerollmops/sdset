@@ -11,8 +11,8 @@ impl<'a, T> Difference<'a, T> {
 /// Returns the slice but with its start advanced to an element
 /// that is greater to the one given in parameter.
 #[inline]
-fn offset_gt<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    match slice.iter().position(|x| x > elem) {
+fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T] {
+    match slice.iter().position(|x| x >= elem) {
         Some(pos) => &slice[pos..],
         None => &[],
     }
@@ -29,14 +29,15 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
             match others.iter().filter_map(|v| v.first()).min() {
                 Some(min) => {
                     let len = output.len();
-                    output.extend(base.iter().take_while(|&x| x != min).cloned());
+                    output.extend(base.iter().take_while(|&x| x < min).cloned());
                     let add = output.len() - len;
 
                     *base = if add < base.len() { &base[add + 1..] } else { &[] };
 
-                    // @Improvement: advance each slice to something different
-                    for slice in others.iter_mut() {
-                        *slice = offset_gt(slice, min);
+                    if let Some(first) = base.first() {
+                        for slice in others.iter_mut() {
+                            *slice = offset_ge(slice, first);
+                        }
                     }
                 },
                 None => {
@@ -101,9 +102,9 @@ mod tests {
 
     #[test]
     fn three_slices() {
-        let a = &[1, 2, 3, 6];
+        let a = &[1, 2, 3, 6, 7];
         let b = &[2, 3, 4];
-        let c = &[3, 4, 5];
+        let c = &[3, 4, 5, 7];
 
         let union_ = Difference::new(vec![a, b, c]).into_vec();
         assert_eq!(&union_[..], &[1, 6]);
