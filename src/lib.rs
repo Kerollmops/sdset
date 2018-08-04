@@ -2,6 +2,9 @@
 
 extern crate test;
 
+#[cfg(test)]
+#[macro_use] extern crate quickcheck;
+
 // FIXME allow to use #![no_std]
 use std::cmp::Ordering;
 

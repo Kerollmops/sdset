@@ -1,4 +1,5 @@
 use std::cmp;
+use clean::offset_ge;
 
 use self::Equality::*;
 
@@ -18,46 +19,37 @@ enum Equality<'a, T: 'a> {
 }
 
 #[inline]
-fn test_equality<'a, I, T: 'a + Ord>(iter: I) -> Option<Equality<'a, T>>
-where I: Iterator<Item = &'a T>
-{
+fn test_equality<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
     let mut is_equal = true;
-    let mut max = None;
-    for x in iter {
-        if max.is_some() { is_equal = max == Some(x) }
-        max = cmp::max(max, Some(x));
+    let mut max = &slices[0][0];
+    for x in slices {
+        let x = &x[0];
+        if is_equal { is_equal = max == x }
+        max = cmp::max(max, x);
     }
-    max.map(|max| if is_equal { Equal(max) } else { NotEqual(max) })
+    if is_equal { Equal(max) } else { NotEqual(max) }
 }
 
-/// Returns the slice but with its start advanced to an element
-/// that is equal to the one given in parameter.
-#[inline]
-fn offset_eq<'a, T: 'a + Eq>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    match slice.iter().position(|x| x == elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
-    }
-}
-
-impl<'a, T: Ord + Clone> Intersection<'a, T> {
+impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
-        'outer: loop {
-            match test_equality(self.slices.iter().filter_map(|s| s.first())) {
-                Some(Equal(x)) => {
+        if self.slices.is_empty() { return }
+        if self.slices.iter().any(|s| s.is_empty()) { return }
+
+        loop {
+            match test_equality(&self.slices) {
+                Equal(x) => {
                     output.push(x.clone());
                     for slice in &mut self.slices {
                         *slice = &slice[1..];
-                        if slice.is_empty() { break 'outer }
+                        if slice.is_empty() { return }
                     }
                 },
-                Some(NotEqual(x)) => {
+                NotEqual(x) => {
                     for slice in &mut self.slices {
-                        *slice = offset_eq(slice, x);
-                        if slice.is_empty() { break 'outer }
+                        *slice = offset_ge(slice, x);
+                        if slice.is_empty() { return }
                     }
-                },
-                None => break,
+                }
             }
         }
     }
@@ -152,5 +144,43 @@ mod tests {
             let set: Vec<_> = a.intersection(&b).cloned().collect();
             test::black_box(|| set);
         });
+    }
+
+    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
+        x.sort_unstable();
+        x.dedup();
+    }
+
+    quickcheck! {
+        fn qc_intersection(xss: Vec<Vec<i32>>) -> bool {
+            use std::collections::BTreeSet;
+            use std::iter::FromIterator;
+
+            // FIXME temporary hack (can have mutable parameters!)
+            let mut xss = xss;
+
+            for xs in &mut xss {
+                sort_dedup(xs);
+            }
+
+            let x = {
+                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                Intersection::new(xss).into_vec()
+            };
+
+            let mut xss = xss.into_iter();
+            let mut y = match xss.next() {
+                Some(xs) => BTreeSet::from_iter(xs),
+                None => BTreeSet::new(),
+            };
+
+            for v in xss {
+                let x = BTreeSet::from_iter(v.iter().cloned());
+                y = y.intersection(&x).cloned().collect();
+            }
+            let y: Vec<_> = y.into_iter().collect();
+
+            x.as_slice() == y.as_slice()
+        }
     }
 }

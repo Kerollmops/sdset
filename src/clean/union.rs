@@ -91,8 +91,8 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let intersection_ = Union::new(vec![a]).into_vec();
-        assert_eq!(&intersection_[..], &[]);
+        let union_ = Union::new(vec![a]).into_vec();
+        assert_eq!(&union_[..], &[]);
     }
 
     #[test]
@@ -202,5 +202,38 @@ mod tests {
 
             test::black_box(|| elements);
         });
+    }
+
+    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
+        x.sort_unstable();
+        x.dedup();
+    }
+
+    quickcheck! {
+        fn qc_union(xss: Vec<Vec<i32>>) -> bool {
+            use std::collections::BTreeSet;
+            use std::iter::FromIterator;
+
+            // FIXME temporary hack (can have mutable parameters!)
+            let mut xss = xss;
+
+            for xs in &mut xss {
+                sort_dedup(xs);
+            }
+
+            let x = {
+                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                Union::new(xss).into_vec()
+            };
+
+            let mut y = BTreeSet::new();
+            for v in xss {
+                let x = BTreeSet::from_iter(v.iter().cloned());
+                y = y.union(&x).cloned().collect();
+            }
+            let y: Vec<_> = y.into_iter().collect();
+
+            x.as_slice() == y.as_slice()
+        }
     }
 }

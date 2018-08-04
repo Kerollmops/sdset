@@ -1,3 +1,6 @@
+use std::cmp;
+use clean::offset_ge;
+
 pub struct Difference<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
@@ -8,16 +11,6 @@ impl<'a, T> Difference<'a, T> {
     }
 }
 
-/// Returns the slice but with its start advanced to an element
-/// that is greater to the one given in parameter.
-#[inline]
-fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T] {
-    match slice.iter().position(|x| x >= elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
-    }
-}
-
 impl<'a, T: Ord + Clone> Difference<'a, T> {
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let (base, others) = match self.slices.split_first_mut() {
@@ -25,20 +18,25 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
             None => return,
         };
 
-        while !base.is_empty() {
-            match others.iter().filter_map(|v| v.first()).min() {
+        while let Some(first) = base.first() {
+
+            let mut minimum = None;
+            for slice in others.iter_mut() {
+                *slice = offset_ge(slice, first);
+                minimum = match (minimum, slice.first()) {
+                    (Some(min), Some(first)) => Some(cmp::min(min, first)),
+                    (None, Some(first)) => Some(first),
+                    (min, _) => min,
+                };
+            }
+
+            match minimum {
+                Some(min) if min == first => *base = offset_ge(&base[1..], min),
                 Some(min) => {
                     let len = output.len();
                     output.extend(base.iter().take_while(|&x| x < min).cloned());
                     let add = output.len() - len;
-
-                    *base = if add < base.len() { &base[add + 1..] } else { &[] };
-
-                    if let Some(first) = base.first() {
-                        for slice in others.iter_mut() {
-                            *slice = offset_ge(slice, first);
-                        }
-                    }
+                    *base = &base[add..];
                 },
                 None => {
                     output.extend_from_slice(base);
@@ -192,5 +190,43 @@ mod tests {
             let set: Vec<_> = base.difference(&b).cloned().collect();
             test::black_box(|| set);
         });
+    }
+
+    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
+        x.sort_unstable();
+        x.dedup();
+    }
+
+    quickcheck! {
+        fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
+            use std::collections::BTreeSet;
+            use std::iter::FromIterator;
+
+            // FIXME temporary hack (can have mutable parameters!)
+            let mut xss = xss;
+
+            for xs in &mut xss {
+                sort_dedup(xs);
+            }
+
+            let x = {
+                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                Difference::new(xss).into_vec()
+            };
+
+            let mut xss = xss.into_iter();
+            let mut y = match xss.next() {
+                Some(xs) => BTreeSet::from_iter(xs),
+                None => BTreeSet::new(),
+            };
+
+            for v in xss {
+                let x = BTreeSet::from_iter(v.iter().cloned());
+                y = y.difference(&x).cloned().collect();
+            }
+            let y: Vec<_> = y.into_iter().collect();
+
+            x.as_slice() == y.as_slice()
+        }
     }
 }
