@@ -1,5 +1,5 @@
 use std::cmp;
-use clean::offset_ge;
+use multi::offset_ge;
 
 use self::Equality::*;
 

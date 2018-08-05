@@ -1,80 +1,17 @@
-//! Operations for already deduplicated and sorted slices.
-
-mod union;
-mod intersection;
-mod difference;
-
-// FIXME allow to use #![no_std]
 use std::cmp::{self, Ordering};
-pub use self::union::Union;
-pub use self::intersection::Intersection;
-pub use self::difference::Difference;
 
-pub struct OpBuilder<'a, T: 'a> {
-    slices: Vec<&'a [T]>,
-}
-
-impl<'a, T> OpBuilder<'a, T> {
-    pub fn new() -> Self {
-        Self { slices: Vec::new() }
-    }
-
-    pub fn from_vec(slices: Vec<&'a [T]>) -> Self {
-        Self { slices }
-    }
-
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self { slices: Vec::with_capacity(capacity) }
-    }
-
-    pub fn reserve(&mut self, additional: usize) {
-        self.slices.reserve(additional);
-    }
-
-    pub fn add(mut self, slice: &'a [T]) -> Self {
-        self.push(slice);
-        self
-    }
-
-    pub fn push(&mut self, slice: &'a [T]) {
-        self.slices.push(slice);
-    }
-
-    pub fn union(self) -> Union<'a, T> {
-        Union::new(self.slices)
-    }
-
-    pub fn intersection(self) -> Intersection<'a, T> {
-        Intersection::new(self.slices)
-    }
-
-    pub fn difference(self) -> Difference<'a, T> {
-        Difference::new(self.slices)
-    }
-}
-
-/// Returns the slice but with its start advanced to an element
-/// that is greater or equal to the one given in parameter.
-#[inline]
-fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T] {
-    match slice.iter().position(|x| x >= elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
-    }
-}
-
-pub struct UnionTwoSlices<'a, T: 'a> {
+pub struct Union<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],
 }
 
-impl<'a, T: 'a> UnionTwoSlices<'a, T> {
+impl<'a, T: 'a> Union<'a, T> {
     pub fn new(a: &'a [T], b: &'a [T]) -> Self {
-        UnionTwoSlices { a, b }
+        Union { a, b }
     }
 }
 
-impl<'a, T: 'a + Ord + Clone> UnionTwoSlices<'a, T> {
+impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let min_len = cmp::max(self.a.len(), self.b.len());
         output.reserve(min_len);
@@ -108,7 +45,6 @@ impl<'a, T: 'a + Ord + Clone> UnionTwoSlices<'a, T> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,7 +55,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 3, 4];
 
-        let union: Vec<_> = UnionTwoSlices::new(a, b).into_vec();
+        let union: Vec<_> = Union::new(a, b).into_vec();
 
         assert_eq!(&union, &[1, 2, 3, 4]);
     }
@@ -129,7 +65,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[];
 
-        let union: Vec<_> = UnionTwoSlices::new(a, b).into_vec();
+        let union: Vec<_> = Union::new(a, b).into_vec();
 
         assert_eq!(&union, &[1, 2, 3]);
     }
@@ -139,7 +75,7 @@ mod tests {
         let a = &[];
         let b = &[2, 3, 4];
 
-        let union: Vec<_> = UnionTwoSlices::new(a, b).into_vec();
+        let union: Vec<_> = Union::new(a, b).into_vec();
 
         assert_eq!(&union, &[2, 3, 4]);
     }
@@ -149,7 +85,7 @@ mod tests {
         let a = &[1];
         let b = &[1];
 
-        let union: Vec<_> = UnionTwoSlices::new(a, b).into_vec();
+        let union: Vec<_> = Union::new(a, b).into_vec();
 
         assert_eq!(&union, &[1]);
     }
@@ -160,7 +96,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union: Vec<_> = UnionTwoSlices::new(&a, &b).into_vec();
+            let union: Vec<_> = Union::new(&a, &b).into_vec();
             test::black_box(|| union);
         });
     }
@@ -171,7 +107,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = UnionTwoSlices::new(&a, &b).into_vec();
+            let union_ = Union::new(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -182,7 +118,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = UnionTwoSlices::new(&a, &b).into_vec();
+            let union_ = Union::new(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -203,7 +139,7 @@ mod tests {
             sort_dedup(&mut a);
             sort_dedup(&mut b);
 
-            let x = UnionTwoSlices::new(&a, &b).into_vec();
+            let x = Union::new(&a, &b).into_vec();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);
