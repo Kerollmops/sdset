@@ -173,37 +173,6 @@ mod tests {
         });
     }
 
-    #[bench]
-    fn bench_btree_two_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = a.union(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn bench_sort_dedup_two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
     fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
         x.sort_unstable();
         x.dedup();
