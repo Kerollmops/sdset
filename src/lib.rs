@@ -19,6 +19,14 @@ fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T]
     }
 }
 
+fn extend_iter_len<I, T>(iter: I, vec: &mut Vec<T>) -> usize
+where I: IntoIterator<Item=T>
+{
+    let len = vec.len();
+    vec.extend(iter);
+    vec.len() - len
+}
+
 #[cfg(test)]
 mod tests {
     use test::{self, Bencher};

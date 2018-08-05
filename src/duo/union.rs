@@ -1,4 +1,5 @@
 use std::cmp::{self, Ordering};
+use ::extend_iter_len;
 
 pub struct Union<'a, T: 'a> {
     a: &'a [T],
@@ -17,25 +18,33 @@ impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
         output.reserve(min_len);
 
         while !self.a.is_empty() && !self.b.is_empty() {
-            match self.a[0].cmp(&self.b[0]) {
-                Ordering::Less => {
-                    output.push(self.a[0].clone());
-                    self.a = &self.a[1..];
-                },
-                Ordering::Equal => {
-                    output.push(self.a[0].clone());
-                    self.a = &self.a[1..];
-                    self.b = &self.b[1..];
-                },
-                Ordering::Greater => {
-                    output.push(self.b[0].clone());
-                    self.b = &self.b[1..];
-                },
-            }
+            let a = &self.a[0];
+            let b = &self.b[0];
+
+            match a.cmp(&b) {
+                 Ordering::Less => {
+                    let iter = self.a.iter().take_while(|&x| x < b).cloned();
+                    let add = extend_iter_len(iter, output);
+
+                    self.a = &self.a[add..];
+                 },
+                 Ordering::Equal => {
+                    let iter = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).map(|(x, _)| x.clone());
+                    let add = extend_iter_len(iter, output);
+                    self.a = &self.a[add..];
+                    self.b = &self.b[add..];
+                 },
+                 Ordering::Greater => {
+                    let iter = self.b.iter().take_while(|&x| x < a).cloned();
+                    let add = extend_iter_len(iter, output);
+
+                    self.b = &self.b[add..];
+                 },
+             }
         }
 
-        output.extend(self.a.iter().cloned());
-        output.extend(self.b.iter().cloned());
+        output.extend_from_slice(self.a);
+        output.extend_from_slice(self.b);
     }
 
     pub fn into_vec(self) -> Vec<T> {

@@ -1,5 +1,5 @@
 use std::cmp;
-use ::offset_ge;
+use ::{extend_iter_len, offset_ge};
 
 pub struct Intersection<'a, T: 'a> {
     a: &'a [T],
@@ -20,9 +20,10 @@ impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
             let b = &self.b[0];
 
             if a == b {
-                output.push(a.clone());
-                self.a = &self.a[1..];
-                self.b = &self.b[1..];
+                let iter = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).map(|(x, _)| x.clone());
+                let add = extend_iter_len(iter, output);
+                self.a = &self.a[add..];
+                self.b = &self.b[add..];
             }
             else {
                 let max = cmp::max(a, b);

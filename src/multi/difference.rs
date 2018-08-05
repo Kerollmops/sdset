@@ -1,5 +1,5 @@
 use std::cmp;
-use ::offset_ge;
+use ::{extend_iter_len, offset_ge};
 
 pub struct Difference<'a, T: 'a> {
     slices: Vec<&'a [T]>,
@@ -33,9 +33,9 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
             match minimum {
                 Some(min) if min == first => *base = offset_ge(&base[1..], min),
                 Some(min) => {
-                    let len = output.len();
-                    output.extend(base.iter().take_while(|&x| x < min).cloned());
-                    let add = output.len() - len;
+                    let iter = base.iter().take_while(|&x| x < min).cloned();
+                    let add = extend_iter_len(iter, output);
+
                     *base = &base[add..];
                 },
                 None => {

@@ -1,3 +1,4 @@
+use ::extend_iter_len;
 use self::Minimums::*;
 
 pub struct Union<'a, T: 'a> {
@@ -48,9 +49,9 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
         loop {
             match two_minimums(&self.slices) {
                 Two((i, _), (_, s)) => {
-                    let len = output.len();
-                    output.extend(self.slices[i].iter().take_while(|&e| e < s).cloned());
-                    let add = output.len() - len;
+                    let iter = self.slices[i].iter().take_while(|&e| e < s).cloned();
+                    let add = extend_iter_len(iter, output);
+
                     self.slices[i] = &self.slices[i][add..];
 
                     output.push(s.clone());

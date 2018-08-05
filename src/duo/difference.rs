@@ -1,4 +1,4 @@
-use ::offset_ge;
+use ::{extend_iter_len, offset_ge};
 
 pub struct Difference<'a, T: 'a> {
     a: &'a [T],
@@ -21,9 +21,9 @@ impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
             match minimum {
                 Some(min) if min == first => self.a = offset_ge(&self.a[1..], min),
                 Some(min) => {
-                    let len = output.len();
-                    output.extend(self.a.iter().take_while(|&x| x < min).cloned());
-                    let add = output.len() - len;
+                    let iter = self.a.iter().take_while(|&x| x < min).cloned();
+                    let add = extend_iter_len(iter, output);
+
                     self.a = &self.a[add..];
                 },
                 None => {
