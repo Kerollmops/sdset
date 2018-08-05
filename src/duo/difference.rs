@@ -1,45 +1,33 @@
-use std::cmp;
 use ::offset_ge;
 
 pub struct Difference<'a, T: 'a> {
-    slices: Vec<&'a [T]>,
+    a: &'a [T],
+    b: &'a [T],
 }
 
-impl<'a, T> Difference<'a, T> {
-    pub fn new(slices: Vec<&'a [T]>) -> Self {
-        Difference { slices }
+impl<'a, T: 'a> Difference<'a, T> {
+    pub fn new(a: &'a [T], b: &'a [T]) -> Self {
+        Difference { a, b }
     }
 }
 
-impl<'a, T: Ord + Clone> Difference<'a, T> {
+impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
-        let (base, others) = match self.slices.split_first_mut() {
-            Some(split) => split,
-            None => return,
-        };
 
-        while let Some(first) = base.first() {
-
-            let mut minimum = None;
-            for slice in others.iter_mut() {
-                *slice = offset_ge(slice, first);
-                minimum = match (minimum, slice.first()) {
-                    (Some(min), Some(first)) => Some(cmp::min(min, first)),
-                    (None, Some(first)) => Some(first),
-                    (min, _) => min,
-                };
-            }
+        while let Some(first) = self.a.first() {
+            self.b = offset_ge(self.b, first);
+            let minimum = self.b.first();
 
             match minimum {
-                Some(min) if min == first => *base = offset_ge(&base[1..], min),
+                Some(min) if min == first => self.a = offset_ge(&self.a[1..], min),
                 Some(min) => {
                     let len = output.len();
-                    output.extend(base.iter().take_while(|&x| x < min).cloned());
+                    output.extend(self.a.iter().take_while(|&x| x < min).cloned());
                     let add = output.len() - len;
-                    *base = &base[add..];
+                    self.a = &self.a[add..];
                 },
                 None => {
-                    output.extend_from_slice(base);
+                    output.extend_from_slice(self.a);
                     break;
                 },
             }
@@ -53,39 +41,18 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use test::{self, Bencher};
 
     #[test]
-    fn no_slice() {
-        let union_: Vec<i32> = Difference::new(vec![]).into_vec();
-        assert_eq!(&union_[..], &[]);
-    }
-
-    #[test]
-    fn one_empty_slice() {
-        let a: &[i32] = &[];
-
-        let intersection_ = Difference::new(vec![a]).into_vec();
-        assert_eq!(&intersection_[..], &[]);
-    }
-
-    #[test]
-    fn one_slice() {
-        let a = &[1, 2, 3];
-
-        let union_ = Difference::new(vec![a]).into_vec();
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
-
-    #[test]
     fn two_slices() {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_ = Difference::new(vec![a, b]).into_vec();
+        let union_ = Difference::new(a, b).into_vec();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
@@ -94,18 +61,8 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_ = Difference::new(vec![a, b]).into_vec();
+        let union_ = Difference::new(a, b).into_vec();
         assert_eq!(&union_[..], &[1, 2]);
-    }
-
-    #[test]
-    fn three_slices() {
-        let a = &[1, 2, 3, 6, 7];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5, 7];
-
-        let union_ = Difference::new(vec![a, b, c]).into_vec();
-        assert_eq!(&union_[..], &[1, 6]);
     }
 
     #[bench]
@@ -114,7 +71,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -125,7 +82,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -136,7 +93,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -198,33 +155,22 @@ mod tests {
     }
 
     quickcheck! {
-        fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
+        fn qc_difference(a: Vec<i32>, b: Vec<i32>) -> bool {
             use std::collections::BTreeSet;
             use std::iter::FromIterator;
 
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
+            let mut a = a;
+            let mut b = b;
 
-            for xs in &mut xss {
-                sort_dedup(xs);
-            }
+            sort_dedup(&mut a);
+            sort_dedup(&mut b);
 
-            let x = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Difference::new(xss).into_vec()
-            };
+            let x = Difference::new(&a, &b).into_vec();
 
-            let mut xss = xss.into_iter();
-            let mut y = match xss.next() {
-                Some(xs) => BTreeSet::from_iter(xs),
-                None => BTreeSet::new(),
-            };
-
-            for v in xss {
-                let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.difference(&x).cloned().collect();
-            }
-            let y: Vec<_> = y.into_iter().collect();
+            let a = BTreeSet::from_iter(a);
+            let b = BTreeSet::from_iter(b);
+            let y = a.difference(&b);
+            let y: Vec<_> = y.cloned().collect();
 
             x.as_slice() == y.as_slice()
         }

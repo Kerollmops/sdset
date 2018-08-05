@@ -2,7 +2,6 @@ mod union;
 mod intersection;
 mod difference;
 
-// FIXME allow to use #![no_std]
 pub use self::union::Union;
 pub use self::intersection::Intersection;
 pub use self::difference::Difference;
@@ -47,15 +46,5 @@ impl<'a, T> OpBuilder<'a, T> {
 
     pub fn difference(self) -> Difference<'a, T> {
         Difference::new(self.slices)
-    }
-}
-
-/// Returns the slice but with its start advanced to an element
-/// that is greater or equal to the one given in parameter.
-#[inline]
-fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T] {
-    match slice.iter().position(|x| x >= elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
     }
 }
