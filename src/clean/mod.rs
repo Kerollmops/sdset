@@ -186,4 +186,31 @@ mod tests {
             test::black_box(|| union_);
         });
     }
+
+    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
+        x.sort_unstable();
+        x.dedup();
+    }
+
+    quickcheck! {
+        fn qc_union(a: Vec<i32>, b: Vec<i32>) -> bool {
+            use std::collections::BTreeSet;
+            use std::iter::FromIterator;
+
+            let mut a = a;
+            let mut b = b;
+
+            sort_dedup(&mut a);
+            sort_dedup(&mut b);
+
+            let x = UnionTwoSlices::new(&a, &b).into_vec();
+
+            let a = BTreeSet::from_iter(a);
+            let b = BTreeSet::from_iter(b);
+            let y = a.union(&b);
+            let y: Vec<_> = y.cloned().collect();
+
+            x.as_slice() == y.as_slice()
+        }
+    }
 }
