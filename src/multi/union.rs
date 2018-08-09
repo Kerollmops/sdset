@@ -17,11 +17,11 @@ enum Minimums<T> {
     Two(T, T),
 }
 
-/// Returns the index of the slices containing the minimum and the minimum values of two slices.
+/// Returns the first values of two slices along with the indexes
+/// which are the minimums (could be equal).
 #[inline]
-fn two_minimums<'a, T>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)>
-where T: 'a + Ord
-{
+fn two_minimums<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)> {
+
     let mut minimums: Minimums<(_, &T)> = Nothing;
 
     for (index, slice) in slices.iter().enumerate().filter(|(_, s)| !s.is_empty()) {
@@ -29,11 +29,11 @@ where T: 'a + Ord
         let (_, min) = current;
 
         minimums = match minimums {
-            One(f) => if min < f.1 { Two(current, f) } else { Two(f, current) },
-            Two(f, _) if min < f.1 => Two(current, f),
-            Two(f, s) if min < s.1 => Two(f, current),
-            Nothing => One(current),
-            mins => mins,
+            One(f) | Two(f, _) if min <  f.1 => Two(current, f),
+            One(f)             if min >= f.1 => Two(f, current),
+            Two(f, s)          if min <  s.1 => Two(f, current),
+            Nothing                          => One(current),
+            other                            => other,
         };
     }
 
@@ -48,15 +48,15 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
 
         loop {
             match two_minimums(&self.slices) {
-                Two((i, _), (_, s)) => {
-                    let iter = self.slices[i].iter().take_while(|&e| e < s).cloned();
-                    let add = extend_iter_len(iter, output);
-
-                    self.slices[i] = &self.slices[i][add..];
-
+                Two((i, f), (_, s)) => {
+                    if f != s {
+                        let iter = self.slices[i].iter().take_while(|&e| e < s).cloned();
+                        let off = extend_iter_len(iter, output);
+                        self.slices[i] = &self.slices[i][off..];
+                    }
                     output.push(s.clone());
-                    for slice in self.slices.iter_mut().filter(|s| !s.is_empty()) {
-                        if slice[0] == *s {
+                    for slice in &mut self.slices {
+                        if slice.first() == Some(s) {
                             *slice = &slice[1..];
                         }
                     }
