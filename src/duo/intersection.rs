@@ -1,6 +1,6 @@
 use std::cmp;
 use sort_dedup::SortDedup;
-use ::{extend_iter_len, offset_ge};
+use ::offset_ge;
 
 /// Represent the _intersection_ set operation that will be applied to two slices.
 ///
@@ -46,10 +46,11 @@ impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
             let b = &self.b[0];
 
             if a == b {
-                let iter = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).map(|(x, _)| x.clone());
-                let add = extend_iter_len(iter, output);
-                self.a = &self.a[add..];
-                self.b = &self.b[add..];
+                let off = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).count();
+                output.extend_from_slice(&self.a[..off]);
+
+                self.a = &self.a[off..];
+                self.b = &self.b[off..];
             }
             else {
                 let max = cmp::max(a, b);

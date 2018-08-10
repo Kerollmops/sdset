@@ -1,6 +1,5 @@
 use std::mem;
 use sort_dedup::SortDedup;
-use ::extend_iter_len;
 use self::Minimums::*;
 
 /// Represent the _union_ set operation that will be applied to the slices.
@@ -79,8 +78,8 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
             match two_minimums(&self.slices) {
                 Two((i, f), (_, s)) => {
                     if f != s {
-                        let iter = self.slices[i].iter().take_while(|&e| e < s).cloned();
-                        let off = extend_iter_len(iter, output);
+                        let off = self.slices[i].iter().take_while(|&e| e < s).count();
+                        output.extend_from_slice(&self.slices[i][..off]);
                         self.slices[i] = &self.slices[i][off..];
                     }
                     output.push(s.clone());

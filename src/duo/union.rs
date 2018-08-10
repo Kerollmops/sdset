@@ -1,6 +1,5 @@
 use std::cmp::{self, Ordering};
 use sort_dedup::SortDedup;
-use ::extend_iter_len;
 
 /// Represent the _union_ set operation that will be applied to two slices.
 ///
@@ -50,22 +49,23 @@ impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
 
             match a.cmp(&b) {
                  Ordering::Less => {
-                    let iter = self.a.iter().take_while(|&x| x < b).cloned();
-                    let add = extend_iter_len(iter, output);
+                    let off = self.a.iter().take_while(|&x| x < b).count();
+                    output.extend_from_slice(&self.a[..off]);
 
-                    self.a = &self.a[add..];
+                    self.a = &self.a[off..];
                  },
                  Ordering::Equal => {
-                    let iter = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).map(|(x, _)| x.clone());
-                    let add = extend_iter_len(iter, output);
-                    self.a = &self.a[add..];
-                    self.b = &self.b[add..];
+                    let off = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).count();
+                    output.extend_from_slice(&self.a[..off]);
+
+                    self.a = &self.a[off..];
+                    self.b = &self.b[off..];
                  },
                  Ordering::Greater => {
-                    let iter = self.b.iter().take_while(|&x| x < a).cloned();
-                    let add = extend_iter_len(iter, output);
+                    let off = self.b.iter().take_while(|&x| x < a).count();
+                    output.extend_from_slice(&self.b[..off]);
 
-                    self.b = &self.b[add..];
+                    self.b = &self.b[off..];
                  },
              }
         }

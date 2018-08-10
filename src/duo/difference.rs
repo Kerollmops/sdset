@@ -1,5 +1,5 @@
-use ::{extend_iter_len, offset_ge};
 use sort_dedup::SortDedup;
+use ::offset_ge;
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -47,10 +47,10 @@ impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
             match minimum {
                 Some(min) if min == first => self.a = offset_ge(&self.a[1..], min),
                 Some(min) => {
-                    let iter = self.a.iter().take_while(|&x| x < min).cloned();
-                    let add = extend_iter_len(iter, output);
+                    let off = self.a.iter().take_while(|&x| x < min).count();
+                    output.extend_from_slice(&self.a[..off]);
 
-                    self.a = &self.a[add..];
+                    self.a = &self.a[off..];
                 },
                 None => {
                     output.extend_from_slice(self.a);

@@ -1,6 +1,6 @@
 use std::{cmp, mem};
 use sort_dedup::SortDedup;
-use ::{extend_iter_len, offset_ge};
+use ::offset_ge;
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -64,10 +64,10 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
             match minimum {
                 Some(min) if min == first => *base = offset_ge(&base[1..], min),
                 Some(min) => {
-                    let iter = base.iter().take_while(|&x| x < min).cloned();
-                    let add = extend_iter_len(iter, output);
+                    let off = base.iter().take_while(|&x| x < min).count();
+                    output.extend_from_slice(&base[..off]);
 
-                    *base = &base[add..];
+                    *base = &base[off..];
                 },
                 None => {
                     output.extend_from_slice(base);
