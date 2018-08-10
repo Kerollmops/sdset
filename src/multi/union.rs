@@ -3,15 +3,37 @@ use sort_dedup::SortDedup;
 use ::extend_iter_len;
 use self::Minimums::*;
 
+/// Represent the _union_ set operation that will be applied to the slices.
+///
+/// # Examples
+/// ```
+/// # use setiter::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use setiter::multi::OpBuilder;
+/// use setiter::SortDedup;
+///
+/// let a = SortDedup::new(&[1, 2, 4])?;
+/// let b = SortDedup::new(&[2, 3, 5, 7])?;
+/// let c = SortDedup::new(&[4, 6, 7])?;
+///
+/// let op = OpBuilder::from_vec(vec![a, b, c]).union();
+///
+/// let res = op.into_vec();
+/// assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 pub struct Union<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
 
 impl<'a, T> Union<'a, T> {
+    /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
         Self::new_unchecked(unsafe { mem::transmute(slices) })
     }
 
+    /// Construct one with unchecked slices.
     pub fn new_unchecked(slices: Vec<&'a [T]>) -> Self {
         Self { slices }
     }
@@ -47,6 +69,7 @@ fn two_minimums<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)>
 }
 
 impl<'a, T: Ord + Clone> Union<'a, T> {
+    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
         if let Some(slice) = self.slices.first() {
             output.reserve(slice.len());
@@ -76,6 +99,7 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
         }
     }
 
+    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn into_vec(self) -> Vec<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);

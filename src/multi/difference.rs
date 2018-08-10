@@ -2,21 +2,47 @@ use std::{cmp, mem};
 use sort_dedup::SortDedup;
 use ::{extend_iter_len, offset_ge};
 
+/// Represent the _difference_ set operation that will be applied to the slices.
+///
+/// Note that the difference is all the elements
+/// that are in the first slice but not in all the others.
+///
+/// # Examples
+/// ```
+/// # use setiter::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use setiter::multi::OpBuilder;
+/// use setiter::SortDedup;
+///
+/// let a = SortDedup::new(&[1, 2, 4])?;
+/// let b = SortDedup::new(&[2, 3, 5, 7])?;
+/// let c = SortDedup::new(&[4, 6, 7])?;
+///
+/// let op = OpBuilder::from_vec(vec![a, b, c]).difference();
+///
+/// let res = op.into_vec();
+/// assert_eq!(&res, &[1]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 pub struct Difference<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
 
 impl<'a, T> Difference<'a, T> {
+    /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
         Self::new_unchecked(unsafe { mem::transmute(slices) })
     }
 
+    /// Construct one with unchecked slices.
     pub fn new_unchecked(slices: Vec<&'a [T]>) -> Self {
         Self { slices }
     }
 }
 
 impl<'a, T: Ord + Clone> Difference<'a, T> {
+    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let (base, others) = match self.slices.split_first_mut() {
             Some(split) => split,
@@ -51,6 +77,7 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
         }
     }
 
+    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn into_vec(self) -> Vec<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);

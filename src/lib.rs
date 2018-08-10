@@ -1,4 +1,54 @@
 //! Operations for already deduplicated and sorted slices.
+//!
+//! This library contains to types of set operations:
+//!   - The [`duo`] is limited to be used with two slices not more not less.
+//! The operations are much more performant than the [`multi`].
+//!   - The [`multi`] can be used to do set operations on multiple slices from zero up to an infinite number.
+//!
+//! So prefer using the [`duo`] when you know that you will need set operations for two slices.
+//!
+//! # Examples
+//!
+//! Using a [`duo`] _union_ set operation on two slices.
+//!
+//! ```
+//! # use setiter::Error;
+//! # fn try_main() -> Result<(), Error> {
+//! use setiter::duo::OpBuilder;
+//! use setiter::SortDedup;
+//!
+//! let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
+//! let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+//!
+//! let op = OpBuilder::new(a, b).union();
+//!
+//! let res = op.into_vec();
+//! assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+//! # Ok(()) }
+//! # try_main().unwrap();
+//! ```
+//!
+//! Using a [`multi`] _intersection_ set operation on three slices.
+//!
+//! ```
+//! # use setiter::Error;
+//! # fn try_main() -> Result<(), Error> {
+//! use setiter::multi::OpBuilder;
+//! use setiter::SortDedup;
+//!
+//! let a = SortDedup::new(&[1, 2, 4])?;
+//! let b = SortDedup::new(&[2, 3, 4, 5, 7])?;
+//! let c = SortDedup::new(&[2, 4, 6, 7])?;
+//!
+//! let op = OpBuilder::from_vec(vec![a, b, c]).intersection();
+//!
+//! let res = op.into_vec();
+//! assert_eq!(&res, &[2, 4]);
+//! # Ok(()) }
+//! # try_main().unwrap();
+//! ```
+
+#![warn(missing_docs)]
 
 #![feature(test)]
 extern crate test;
@@ -10,7 +60,11 @@ mod sort_dedup;
 pub mod multi;
 pub mod duo;
 
-pub use sort_dedup::{SortDedup, Error, sort_dedup_vec};
+pub use sort_dedup::{
+    SortDedup, Error,
+    sort_dedup_vec,
+    is_sort_dedup,
+};
 
 /// Returns the slice but with its start advanced to an element
 /// that is greater or equal to the one given in parameter.

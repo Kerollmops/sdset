@@ -2,22 +2,44 @@ use std::cmp::{self, Ordering};
 use sort_dedup::SortDedup;
 use ::extend_iter_len;
 
+/// Represent the _union_ set operation that will be applied to two slices.
+///
+/// # Examples
+/// ```
+/// # use setiter::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use setiter::duo::OpBuilder;
+/// use setiter::SortDedup;
+///
+/// let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
+/// let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+///
+/// let op = OpBuilder::new(a, b).union();
+///
+/// let res = op.into_vec();
+/// assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 pub struct Union<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],
 }
 
 impl<'a, T: 'a> Union<'a, T> {
+    /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
         Self::new_unchecked(a.into_slice(), b.into_slice())
     }
 
+    /// Construct one with unchecked slices.
     pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
         Self { a, b }
     }
 }
 
 impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
+    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
         let min_len = cmp::max(self.a.len(), self.b.len());
         output.reserve(min_len);
@@ -52,6 +74,7 @@ impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
         output.extend_from_slice(self.b);
     }
 
+    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn into_vec(self) -> Vec<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);

@@ -1,24 +1,45 @@
 use ::{extend_iter_len, offset_ge};
 use sort_dedup::SortDedup;
 
+/// Represent the _difference_ set operation that will be applied to two slices.
+///
+/// # Examples
+/// ```
+/// # use setiter::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use setiter::duo::OpBuilder;
+/// use setiter::SortDedup;
+///
+/// let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
+/// let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+///
+/// let op = OpBuilder::new(a, b).difference();
+///
+/// let res = op.into_vec();
+/// assert_eq!(&res, &[1]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 pub struct Difference<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],
 }
 
 impl<'a, T: 'a> Difference<'a, T> {
+    /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
         Self::new_unchecked(a.into_slice(), b.into_slice())
     }
 
+    /// Construct one with unchecked slices.
     pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
         Self { a, b }
     }
 }
 
 impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
+    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
-
         while let Some(first) = self.a.first() {
             self.b = offset_ge(self.b, first);
             let minimum = self.b.first();
@@ -39,6 +60,7 @@ impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
         }
     }
 
+    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn into_vec(self) -> Vec<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);

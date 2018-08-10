@@ -2,24 +2,45 @@ use std::cmp;
 use sort_dedup::SortDedup;
 use ::{extend_iter_len, offset_ge};
 
+/// Represent the _intersection_ set operation that will be applied to two slices.
+///
+/// # Examples
+/// ```
+/// # use setiter::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use setiter::duo::OpBuilder;
+/// use setiter::SortDedup;
+///
+/// let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
+/// let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+///
+/// let op = OpBuilder::new(a, b).intersection();
+///
+/// let res = op.into_vec();
+/// assert_eq!(&res, &[2, 4, 6, 7]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 pub struct Intersection<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],
 }
 
 impl<'a, T: 'a> Intersection<'a, T> {
+    /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
         Self::new_unchecked(a.into_slice(), b.into_slice())
     }
 
+    /// Construct one with unchecked slices.
     pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
         Self { a, b }
     }
 }
 
 impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
+    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn extend_vec(mut self, output: &mut Vec<T>) {
-
         while !self.a.is_empty() && !self.b.is_empty() {
             let a = &self.a[0];
             let b = &self.b[0];
@@ -38,6 +59,7 @@ impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
         }
     }
 
+    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
     pub fn into_vec(self) -> Vec<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);
