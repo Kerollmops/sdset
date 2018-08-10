@@ -6,7 +6,8 @@ Much performances! Such Wow!
 """
 documentation = "https://docs.rs/sdset"
 license = "MIT"
-version = "0.1.0"
+readme = "README.md"
+version = "0.1.1"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
 
 [dev-dependencies]
