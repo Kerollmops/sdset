@@ -92,8 +92,8 @@ mod tests {
 
     #[test]
     fn no_slice() {
-        let union_: Vec<i32> = Difference::new_unchecked(vec![]).into_vec();
-        assert_eq!(&union_[..], &[]);
+        let difference_: Vec<i32> = Difference::new_unchecked(vec![]).into_vec();
+        assert_eq!(&difference_[..], &[]);
     }
 
     #[test]
@@ -108,8 +108,8 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let union_ = Difference::new_unchecked(vec![a]).into_vec();
-        assert_eq!(&union_[..], &[1, 2, 3]);
+        let difference_ = Difference::new_unchecked(vec![a]).into_vec();
+        assert_eq!(&difference_[..], &[1, 2, 3]);
     }
 
     #[test]
@@ -117,8 +117,8 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_ = Difference::new_unchecked(vec![a, b]).into_vec();
-        assert_eq!(&union_[..], &[1, 3]);
+        let difference_ = Difference::new_unchecked(vec![a, b]).into_vec();
+        assert_eq!(&difference_[..], &[1, 3]);
     }
 
     #[test]
@@ -126,8 +126,8 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_ = Difference::new_unchecked(vec![a, b]).into_vec();
-        assert_eq!(&union_[..], &[1, 2]);
+        let difference_ = Difference::new_unchecked(vec![a, b]).into_vec();
+        assert_eq!(&difference_[..], &[1, 2]);
     }
 
     #[test]
@@ -136,8 +136,8 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5, 7];
 
-        let union_ = Difference::new_unchecked(vec![a, b, c]).into_vec();
-        assert_eq!(&union_[..], &[1, 6]);
+        let difference_ = Difference::new_unchecked(vec![a, b, c]).into_vec();
+        assert_eq!(&difference_[..], &[1, 6]);
     }
 
     quickcheck! {
@@ -178,7 +178,7 @@ mod tests {
 mod bench {
     extern crate test;
     use super::*;
-        use self::test::Bencher;
+    use self::test::Bencher;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
@@ -186,8 +186,8 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| union_);
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| difference_);
         });
     }
 
@@ -197,8 +197,8 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| union_);
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| difference_);
         });
     }
 
@@ -208,8 +208,44 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| union_);
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| difference_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (1..101).collect();
+        let c: Vec<_> = (2..102).collect();
+
+        bench.iter(|| {
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            test::black_box(|| difference_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (34..134).collect();
+        let c: Vec<_> = (66..167).collect();
+
+        bench.iter(|| {
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            test::black_box(|| difference_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+        let c: Vec<_> = (200..300).collect();
+
+        bench.iter(|| {
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            test::black_box(|| difference_);
         });
     }
 }

@@ -154,7 +154,7 @@ mod tests {
 mod bench {
     extern crate test;
     use super::*;
-        use self::test::Bencher;
+    use self::test::Bencher;
 
     #[bench]
     fn union_two_slices_big(bench: &mut Bencher) {

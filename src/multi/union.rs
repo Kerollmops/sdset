@@ -203,7 +203,7 @@ mod tests {
 mod bench {
     extern crate test;
     use super::*;
-        use self::test::Bencher;
+    use self::test::Bencher;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
@@ -234,6 +234,42 @@ mod bench {
 
         bench.iter(|| {
             let union_ = Union::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (1..101).collect();
+        let c: Vec<_> = (2..102).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (34..134).collect();
+        let c: Vec<_> = (66..167).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn three_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+        let c: Vec<_> = (200..300).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
             test::black_box(|| union_);
         });
     }
