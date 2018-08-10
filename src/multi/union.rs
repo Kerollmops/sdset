@@ -22,6 +22,7 @@ use self::Minimums::*;
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
+#[derive(Clone)]
 pub struct Union<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }

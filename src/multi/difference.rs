@@ -25,6 +25,7 @@ use ::offset_ge;
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
+#[derive(Clone)]
 pub struct Difference<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }

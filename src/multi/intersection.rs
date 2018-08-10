@@ -26,6 +26,7 @@ use self::Equality::*;
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
+#[derive(Clone)]
 pub struct Intersection<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }

@@ -29,6 +29,7 @@ pub use self::difference::Difference;
 pub use self::intersection::Intersection;
 
 /// Type used to make a set operation on two slices only.
+#[derive(Copy, Clone)]
 pub struct OpBuilder<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],

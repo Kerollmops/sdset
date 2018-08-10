@@ -3,6 +3,7 @@ use std::{error, fmt};
 
 /// Represent a slice which contains types that are sorted and deduplicated.
 #[repr(transparent)]
+#[derive(Copy, Clone)]
 pub struct SortDedup<'a, T: 'a>(&'a [T]);
 
 /// Represent the possible errors when creating a [`SortDedup`] slice.

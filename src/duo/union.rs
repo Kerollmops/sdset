@@ -20,6 +20,7 @@ use sort_dedup::SortDedup;
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
+#[derive(Copy, Clone)]
 pub struct Union<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],

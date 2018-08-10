@@ -20,6 +20,7 @@ use ::offset_ge;
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
+#[derive(Copy, Clone)]
 pub struct Difference<'a, T: 'a> {
     a: &'a [T],
     b: &'a [T],

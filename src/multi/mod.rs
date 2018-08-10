@@ -32,6 +32,7 @@ pub use self::difference::Difference;
 
 /// Type used to acquire any number of slices
 /// and make a set operation on these slices.
+#[derive(Clone)]
 pub struct OpBuilder<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
