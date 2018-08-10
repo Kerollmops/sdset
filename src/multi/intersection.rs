@@ -96,7 +96,6 @@ impl<'a, T: 'a + Ord + Clone> Intersection<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::{self, Bencher};
 
     #[test]
     fn no_slice() {
@@ -139,44 +138,6 @@ mod tests {
         assert_eq!(&intersection_[..], &[3]);
     }
 
-    #[bench]
-    fn bench_two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| intersection_);
-        });
-    }
-
-    #[bench]
-    fn bench_two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| intersection_);
-        });
-    }
-
-    #[bench]
-    fn bench_two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        bench.iter(|| {
-            let union_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
-            test::black_box(|| union_);
-        });
-    }
-
-    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
-        x.sort_unstable();
-        x.dedup();
-    }
-
     quickcheck! {
         fn qc_intersection(xss: Vec<Vec<i32>>) -> bool {
             use std::collections::BTreeSet;
@@ -186,7 +147,7 @@ mod tests {
             let mut xss = xss;
 
             for xs in &mut xss {
-                sort_dedup(xs);
+                ::sort_dedup_vec(xs);
             }
 
             let x = {
@@ -208,5 +169,45 @@ mod tests {
 
             x.as_slice() == y.as_slice()
         }
+    }
+}
+
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    extern crate test;
+    use super::*;
+        use self::test::Bencher;
+
+    #[bench]
+    fn two_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (1..101).collect();
+
+        bench.iter(|| {
+            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| intersection_);
+        });
+    }
+
+    #[bench]
+    fn two_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (51..151).collect();
+
+        bench.iter(|| {
+            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| intersection_);
+        });
+    }
+
+    #[bench]
+    fn two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+
+        bench.iter(|| {
+            let union_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
+            test::black_box(|| union_);
+        });
     }
 }

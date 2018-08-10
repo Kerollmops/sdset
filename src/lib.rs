@@ -50,8 +50,7 @@
 
 #![warn(missing_docs)]
 
-#![feature(test)]
-extern crate test;
+#![cfg_attr(feature = "unstable", feature(test))]
 
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
@@ -76,12 +75,13 @@ fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T]
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use test::{self, Bencher};
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    extern crate test;
+    use self::test::Bencher;
 
     #[bench]
-    fn bench_difference_btree_two_slices_big(bench: &mut Bencher) {
+    fn difference_btree_two_slices_big(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_difference_btree_two_slices_big2(bench: &mut Bencher) {
+    fn difference_btree_two_slices_big2(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -115,7 +115,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_difference_btree_two_slices_big3(bench: &mut Bencher) {
+    fn difference_btree_two_slices_big3(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -132,7 +132,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_intersection_btree_two_slices_big(bench: &mut Bencher) {
+    fn intersection_btree_two_slices_big(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_intersection_btree_two_slices_big2(bench: &mut Bencher) {
+    fn intersection_btree_two_slices_big2(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -166,7 +166,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_intersection_btree_two_slices_big3(bench: &mut Bencher) {
+    fn intersection_btree_two_slices_big3(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_btree_two_slices_big(bench: &mut Bencher) {
+    fn union_btree_two_slices_big(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_btree_two_slices_big2(bench: &mut Bencher) {
+    fn union_btree_two_slices_big2(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_btree_two_slices_big3(bench: &mut Bencher) {
+    fn union_btree_two_slices_big3(bench: &mut Bencher) {
         use std::collections::BTreeSet;
         use std::iter::FromIterator;
 
@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_sort_dedup_two_slices_big(bench: &mut Bencher) {
+    fn union_sort_dedup_two_slices_big(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
 
@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_sort_dedup_two_slices_big2(bench: &mut Bencher) {
+    fn union_sort_dedup_two_slices_big2(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (51..151).collect();
 
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_union_sort_dedup_two_slices_big3(bench: &mut Bencher) {
+    fn union_sort_dedup_two_slices_big3(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (100..200).collect();
 

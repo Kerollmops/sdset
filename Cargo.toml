@@ -7,8 +7,11 @@ Much performances! Such Wow!
 documentation = "https://docs.rs/sdset"
 license = "MIT"
 readme = "README.md"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
 
 [dev-dependencies]
 quickcheck = "0.6"
+
+[features]
+unstable = []

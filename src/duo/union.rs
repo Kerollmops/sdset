@@ -86,7 +86,6 @@ impl<'a, T: 'a + Ord + Clone> Union<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::{self, Bencher};
 
     #[test]
     fn union_two_slices_easy() {
@@ -128,44 +127,6 @@ mod tests {
         assert_eq!(&union, &[1]);
     }
 
-    #[bench]
-    fn union_bench_two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        bench.iter(|| {
-            let union: Vec<_> = Union::new_unchecked(&a, &b).into_vec();
-            test::black_box(|| union);
-        });
-    }
-
-    #[bench]
-    fn union_bench_two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        bench.iter(|| {
-            let union_ = Union::new_unchecked(&a, &b).into_vec();
-            test::black_box(|| union_);
-        });
-    }
-
-    #[bench]
-    fn union_bench_two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        bench.iter(|| {
-            let union_ = Union::new_unchecked(&a, &b).into_vec();
-            test::black_box(|| union_);
-        });
-    }
-
-    fn sort_dedup<T: Ord>(x: &mut Vec<T>) {
-        x.sort_unstable();
-        x.dedup();
-    }
-
     quickcheck! {
         fn qc_union(a: Vec<i32>, b: Vec<i32>) -> bool {
             use std::collections::BTreeSet;
@@ -174,8 +135,8 @@ mod tests {
             let mut a = a;
             let mut b = b;
 
-            sort_dedup(&mut a);
-            sort_dedup(&mut b);
+            ::sort_dedup_vec(&mut a);
+            ::sort_dedup_vec(&mut b);
 
             let x = Union::new_unchecked(&a, &b).into_vec();
 
@@ -186,5 +147,45 @@ mod tests {
 
             x.as_slice() == y.as_slice()
         }
+    }
+}
+
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    extern crate test;
+    use super::*;
+        use self::test::Bencher;
+
+    #[bench]
+    fn union_two_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (1..101).collect();
+
+        bench.iter(|| {
+            let union: Vec<_> = Union::new_unchecked(&a, &b).into_vec();
+            test::black_box(|| union);
+        });
+    }
+
+    #[bench]
+    fn union_two_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (51..151).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new_unchecked(&a, &b).into_vec();
+            test::black_box(|| union_);
+        });
+    }
+
+    #[bench]
+    fn union_two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).collect();
+        let b: Vec<_> = (100..200).collect();
+
+        bench.iter(|| {
+            let union_ = Union::new_unchecked(&a, &b).into_vec();
+            test::black_box(|| union_);
+        });
     }
 }
