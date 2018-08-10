@@ -3,7 +3,7 @@ use std::{error, fmt};
 
 /// Represent a slice which contains types that are sorted and deduplicated.
 #[repr(transparent)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SortDedup<'a, T: 'a>(&'a [T]);
 
 /// Represent the possible errors when creating a [`SortDedup`] slice.
@@ -37,6 +37,12 @@ impl<'a, T> SortDedup<'a, T> {
     ///
     /// let slice = &[1, 2, 4, 6, 7];
     /// let sd = SortDedup::new(slice)?;
+    ///
+    /// // this slice is not sorted!
+    /// let slice = &[1, 2, 4, 7, 6];
+    /// let sd = SortDedup::new(slice);
+    ///
+    /// assert_eq!(sd, Err(Error::NotSort));
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
