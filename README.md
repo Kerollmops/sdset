@@ -2,7 +2,7 @@
 
 Set theory applied on sorted and deduplicated slices. Much performances! Such Wow!
 
-`sdset` is for `sorted-deduplicated-slices-set-operation` which is a little bit too long.
+`sdset` stands for `sorted-deduplicated-slices-set-operations` which is a little bit too long.
 
 [Documentation](https://docs.rs/sdset) can be found on docs.rs.
 
