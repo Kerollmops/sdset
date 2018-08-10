@@ -1,4 +1,5 @@
 use std::cmp::{self, Ordering};
+use sort_dedup::SortDedup;
 use ::extend_iter_len;
 
 pub struct Union<'a, T: 'a> {
@@ -7,8 +8,12 @@ pub struct Union<'a, T: 'a> {
 }
 
 impl<'a, T: 'a> Union<'a, T> {
-    pub fn new(a: &'a [T], b: &'a [T]) -> Self {
-        Union { a, b }
+    pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
+        Self::new_unchecked(a.into_slice(), b.into_slice())
+    }
+
+    pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
+        Self { a, b }
     }
 }
 
@@ -64,7 +69,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 3, 4];
 
-        let union: Vec<_> = Union::new(a, b).into_vec();
+        let union: Vec<_> = Union::new_unchecked(a, b).into_vec();
 
         assert_eq!(&union, &[1, 2, 3, 4]);
     }
@@ -74,7 +79,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[];
 
-        let union: Vec<_> = Union::new(a, b).into_vec();
+        let union: Vec<_> = Union::new_unchecked(a, b).into_vec();
 
         assert_eq!(&union, &[1, 2, 3]);
     }
@@ -84,7 +89,7 @@ mod tests {
         let a = &[];
         let b = &[2, 3, 4];
 
-        let union: Vec<_> = Union::new(a, b).into_vec();
+        let union: Vec<_> = Union::new_unchecked(a, b).into_vec();
 
         assert_eq!(&union, &[2, 3, 4]);
     }
@@ -94,7 +99,7 @@ mod tests {
         let a = &[1];
         let b = &[1];
 
-        let union: Vec<_> = Union::new(a, b).into_vec();
+        let union: Vec<_> = Union::new_unchecked(a, b).into_vec();
 
         assert_eq!(&union, &[1]);
     }
@@ -105,7 +110,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union: Vec<_> = Union::new(&a, &b).into_vec();
+            let union: Vec<_> = Union::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union);
         });
     }
@@ -116,7 +121,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Union::new(&a, &b).into_vec();
+            let union_ = Union::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -127,7 +132,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Union::new(&a, &b).into_vec();
+            let union_ = Union::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -148,7 +153,7 @@ mod tests {
             sort_dedup(&mut a);
             sort_dedup(&mut b);
 
-            let x = Union::new(&a, &b).into_vec();
+            let x = Union::new_unchecked(&a, &b).into_vec();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);

@@ -1,4 +1,5 @@
-use std::cmp;
+use std::{cmp, mem};
+use sort_dedup::SortDedup;
 use ::{extend_iter_len, offset_ge};
 
 pub struct Difference<'a, T: 'a> {
@@ -6,8 +7,12 @@ pub struct Difference<'a, T: 'a> {
 }
 
 impl<'a, T> Difference<'a, T> {
-    pub fn new(slices: Vec<&'a [T]>) -> Self {
-        Difference { slices }
+    pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
+        Self::new_unchecked(unsafe { mem::transmute(slices) })
+    }
+
+    pub fn new_unchecked(slices: Vec<&'a [T]>) -> Self {
+        Self { slices }
     }
 }
 
@@ -60,7 +65,7 @@ mod tests {
 
     #[test]
     fn no_slice() {
-        let union_: Vec<i32> = Difference::new(vec![]).into_vec();
+        let union_: Vec<i32> = Difference::new_unchecked(vec![]).into_vec();
         assert_eq!(&union_[..], &[]);
     }
 
@@ -68,7 +73,7 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let intersection_ = Difference::new(vec![a]).into_vec();
+        let intersection_ = Difference::new_unchecked(vec![a]).into_vec();
         assert_eq!(&intersection_[..], &[]);
     }
 
@@ -76,7 +81,7 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let union_ = Difference::new(vec![a]).into_vec();
+        let union_ = Difference::new_unchecked(vec![a]).into_vec();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
@@ -85,7 +90,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_ = Difference::new(vec![a, b]).into_vec();
+        let union_ = Difference::new_unchecked(vec![a, b]).into_vec();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
@@ -94,7 +99,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_ = Difference::new(vec![a, b]).into_vec();
+        let union_ = Difference::new_unchecked(vec![a, b]).into_vec();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -104,7 +109,7 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5, 7];
 
-        let union_ = Difference::new(vec![a, b, c]).into_vec();
+        let union_ = Difference::new_unchecked(vec![a, b, c]).into_vec();
         assert_eq!(&union_[..], &[1, 6]);
     }
 
@@ -114,7 +119,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -125,7 +130,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -136,7 +141,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(vec![&a, &b]).into_vec();
+            let union_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -160,7 +165,7 @@ mod tests {
 
             let x = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Difference::new(xss).into_vec()
+                Difference::new_unchecked(xss).into_vec()
             };
 
             let mut xss = xss.into_iter();

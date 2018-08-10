@@ -1,4 +1,5 @@
-use std::cmp;
+use std::{cmp, mem};
+use sort_dedup::SortDedup;
 use ::offset_ge;
 
 use self::Equality::*;
@@ -8,8 +9,12 @@ pub struct Intersection<'a, T: 'a> {
 }
 
 impl<'a, T> Intersection<'a, T> {
-    pub fn new(slices: Vec<&'a [T]>) -> Self {
-        Intersection { slices }
+    pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
+        Self::new_unchecked(unsafe { mem::transmute(slices) })
+    }
+
+    pub fn new_unchecked(slices: Vec<&'a [T]>) -> Self {
+        Self { slices }
     }
 }
 
@@ -68,7 +73,7 @@ mod tests {
 
     #[test]
     fn no_slice() {
-        let intersection_: Vec<i32> = Intersection::new(vec![]).into_vec();
+        let intersection_: Vec<i32> = Intersection::new_unchecked(vec![]).into_vec();
         assert_eq!(&intersection_[..], &[]);
     }
 
@@ -76,7 +81,7 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let intersection_ = Intersection::new(vec![a]).into_vec();
+        let intersection_ = Intersection::new_unchecked(vec![a]).into_vec();
         assert_eq!(&intersection_[..], &[]);
     }
 
@@ -84,7 +89,7 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let intersection_ = Intersection::new(vec![a]).into_vec();
+        let intersection_ = Intersection::new_unchecked(vec![a]).into_vec();
         assert_eq!(&intersection_[..], &[1, 2, 3]);
     }
 
@@ -93,7 +98,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 3, 4];
 
-        let intersection_ = Intersection::new(vec![a, b]).into_vec();
+        let intersection_ = Intersection::new_unchecked(vec![a, b]).into_vec();
         assert_eq!(&intersection_[..], &[2, 3]);
     }
 
@@ -103,7 +108,7 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5];
 
-        let intersection_ = Intersection::new(vec![a, b, c]).into_vec();
+        let intersection_ = Intersection::new_unchecked(vec![a, b, c]).into_vec();
         assert_eq!(&intersection_[..], &[3]);
     }
 
@@ -113,7 +118,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new(vec![&a, &b]).into_vec();
+            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| intersection_);
         });
     }
@@ -124,7 +129,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new(vec![&a, &b]).into_vec();
+            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| intersection_);
         });
     }
@@ -135,7 +140,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Intersection::new(vec![&a, &b]).into_vec();
+            let union_ = Intersection::new_unchecked(vec![&a, &b]).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -159,7 +164,7 @@ mod tests {
 
             let x = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Intersection::new(xss).into_vec()
+                Intersection::new_unchecked(xss).into_vec()
             };
 
             let mut xss = xss.into_iter();

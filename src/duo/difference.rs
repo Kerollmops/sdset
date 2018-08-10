@@ -1,4 +1,5 @@
 use ::{extend_iter_len, offset_ge};
+use sort_dedup::SortDedup;
 
 pub struct Difference<'a, T: 'a> {
     a: &'a [T],
@@ -6,8 +7,12 @@ pub struct Difference<'a, T: 'a> {
 }
 
 impl<'a, T: 'a> Difference<'a, T> {
-    pub fn new(a: &'a [T], b: &'a [T]) -> Self {
-        Difference { a, b }
+    pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
+        Self::new_unchecked(a.into_slice(), b.into_slice())
+    }
+
+    pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
+        Self { a, b }
     }
 }
 
@@ -52,7 +57,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_ = Difference::new(a, b).into_vec();
+        let union_ = Difference::new_unchecked(a, b).into_vec();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
@@ -61,7 +66,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_ = Difference::new(a, b).into_vec();
+        let union_ = Difference::new_unchecked(a, b).into_vec();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -71,7 +76,7 @@ mod tests {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -82,7 +87,7 @@ mod tests {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -93,7 +98,7 @@ mod tests {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_vec();
             test::black_box(|| union_);
         });
     }
@@ -114,7 +119,7 @@ mod tests {
             sort_dedup(&mut a);
             sort_dedup(&mut b);
 
-            let x = Difference::new(&a, &b).into_vec();
+            let x = Difference::new_unchecked(&a, &b).into_vec();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);

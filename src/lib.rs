@@ -6,8 +6,11 @@ extern crate test;
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
+mod sort_dedup;
 pub mod multi;
 pub mod duo;
+
+pub use sort_dedup::{SortDedup, Error, sort_dedup_vec};
 
 /// Returns the slice but with its start advanced to an element
 /// that is greater or equal to the one given in parameter.

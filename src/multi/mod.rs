@@ -1,3 +1,6 @@
+use std::mem;
+use sort_dedup::SortDedup;
+
 mod union;
 mod intersection;
 mod difference;
@@ -15,7 +18,14 @@ impl<'a, T> OpBuilder<'a, T> {
         Self { slices: Vec::new() }
     }
 
-    pub fn from_vec(slices: Vec<&'a [T]>) -> Self {
+    pub fn from_vec(slices: Vec<SortDedup<'a, T>>) -> Self {
+        // the SortDedup type is marked as transparent
+        // so it is safe to transmute it to the underlying slice
+        // transmuting here is done to avoid doing a useless allocation
+        Self::from_vec_unchecked(unsafe { mem::transmute(slices) })
+    }
+
+    pub fn from_vec_unchecked(slices: Vec<&'a [T]>) -> Self {
         Self { slices }
     }
 
@@ -37,14 +47,14 @@ impl<'a, T> OpBuilder<'a, T> {
     }
 
     pub fn union(self) -> Union<'a, T> {
-        Union::new(self.slices)
+        Union::new_unchecked(self.slices)
     }
 
     pub fn intersection(self) -> Intersection<'a, T> {
-        Intersection::new(self.slices)
+        Intersection::new_unchecked(self.slices)
     }
 
     pub fn difference(self) -> Difference<'a, T> {
-        Difference::new(self.slices)
+        Difference::new_unchecked(self.slices)
     }
 }
