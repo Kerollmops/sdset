@@ -5,10 +5,10 @@ use ::offset_ge;
 ///
 /// # Examples
 /// ```
-/// # use setiter::Error;
+/// # use sdset::Error;
 /// # fn try_main() -> Result<(), Error> {
-/// use setiter::duo::OpBuilder;
-/// use setiter::SortDedup;
+/// use sdset::duo::OpBuilder;
+/// use sdset::SortDedup;
 ///
 /// let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
 /// let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;

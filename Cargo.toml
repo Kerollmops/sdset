@@ -1,5 +1,10 @@
 [package]
-name = "setiter"
+name = "sdset"
+description = """
+Set operations for sorted and deduplicated slices.
+Much performances! Such Wow!
+"""
+documentation = "https://docs.rs/sdset"
 version = "0.1.0"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
 

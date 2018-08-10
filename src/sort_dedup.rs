@@ -31,9 +31,9 @@ impl<'a, T> SortDedup<'a, T> {
     /// Construct the type only if it is sorted and deduplicated.
     ///
     /// ```
-    /// # use setiter::Error;
+    /// # use sdset::Error;
     /// # fn try_main() -> Result<(), Error> {
-    /// use setiter::SortDedup;
+    /// use sdset::SortDedup;
     ///
     /// let slice = &[1, 2, 4, 6, 7];
     /// let sd = SortDedup::new(slice)?;
@@ -55,9 +55,9 @@ impl<'a, T> SortDedup<'a, T> {
     /// Construct the type without checking if the slice.
     ///
     /// ```
-    /// # use setiter::Error;
+    /// # use sdset::Error;
     /// # fn try_main() -> Result<(), Error> {
-    /// use setiter::SortDedup;
+    /// use sdset::SortDedup;
     ///
     /// // this slice is not sorted
     /// let slice = &[1, 2, 4, 7, 6];
@@ -71,7 +71,7 @@ impl<'a, T> SortDedup<'a, T> {
         SortDedup(slice)
     }
 
-    /// Transform the underlying slice.
+    /// Transform into the underlying slice.
     pub fn into_slice(self) -> &'a [T] {
         self.0
     }

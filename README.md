@@ -1,2 +1,4 @@
-# setiter
-Set theory applied on sorted slices, for algorithms needing performances.
+# setset
+Set theory applied on sorted and deduplicated slices.
+
+Much performances! Such Wow!

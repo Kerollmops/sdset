@@ -1,6 +1,6 @@
-//! Operations for already deduplicated and sorted slices.
+//! Operations for already sorted and deduplicated slices.
 //!
-//! This library contains to types of set operations:
+//! This library contains to kind of set operations:
 //!   - The [`duo`] is limited to be used with two slices not more not less.
 //! The operations are much more performant than the [`multi`].
 //!   - The [`multi`] can be used to do set operations on multiple slices from zero up to an infinite number.
@@ -12,10 +12,10 @@
 //! Using a [`duo`] _union_ set operation on two slices.
 //!
 //! ```
-//! # use setiter::Error;
+//! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
-//! use setiter::duo::OpBuilder;
-//! use setiter::SortDedup;
+//! use sdset::duo::OpBuilder;
+//! use sdset::SortDedup;
 //!
 //! let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
 //! let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
@@ -31,10 +31,10 @@
 //! Using a [`multi`] _intersection_ set operation on three slices.
 //!
 //! ```
-//! # use setiter::Error;
+//! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
-//! use setiter::multi::OpBuilder;
-//! use setiter::SortDedup;
+//! use sdset::multi::OpBuilder;
+//! use sdset::SortDedup;
 //!
 //! let a = SortDedup::new(&[1, 2, 4])?;
 //! let b = SortDedup::new(&[2, 3, 4, 5, 7])?;
