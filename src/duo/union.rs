@@ -157,7 +157,7 @@ mod bench {
     use self::test::Bencher;
 
     #[bench]
-    fn union_two_slices_big(bench: &mut Bencher) {
+    fn two_slices_big(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (1..101).collect();
 
@@ -168,7 +168,7 @@ mod bench {
     }
 
     #[bench]
-    fn union_two_slices_big2(bench: &mut Bencher) {
+    fn two_slices_big2(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (51..151).collect();
 
@@ -179,7 +179,7 @@ mod bench {
     }
 
     #[bench]
-    fn union_two_slices_big3(bench: &mut Bencher) {
+    fn two_slices_big3(bench: &mut Bencher) {
         let a: Vec<_> = (0..100).collect();
         let b: Vec<_> = (100..200).collect();
 

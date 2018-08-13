@@ -1,0 +1,9 @@
+[package]
+name = "gen-bench-data"
+version = "0.1.0"
+authors = ["Kerollmops <renault.cle@gmail.com>"]
+
+[dependencies]
+lazy_static = "1.1"
+ndarray = "0.11"
+regex = "1.0"

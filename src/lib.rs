@@ -77,426 +77,447 @@ fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T]
 
 #[cfg(all(feature = "unstable", test))]
 mod bench {
-    extern crate test;
-    use self::test::Bencher;
+    mod btree {
+        mod difference {
+            extern crate test;
+            use self::test::Bencher;
 
-    #[bench]
-    fn difference_btree_two_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
+            #[bench]
+            fn two_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
 
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
 
-        bench.iter(|| {
-            let set: Vec<_> = a.difference(&b).cloned().collect();
-            test::black_box(|| set);
-        });
+                bench.iter(|| {
+                    let set: Vec<_> = a.difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (51..151).collect();
+
+                let base = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = base.difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+
+                let base = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = base.difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+                let c: Vec<_> = (2..102).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let set: Vec<_> = ab.difference(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (34..134).collect();
+                let c: Vec<_> = (67..167).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let set: Vec<_> = ab.difference(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+                let c: Vec<_> = (200..300).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let set: Vec<_> = ab.difference(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+        }
+
+        mod intersection {
+            extern crate test;
+            use self::test::Bencher;
+
+            #[bench]
+            fn two_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.intersection(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (51..151).collect();
+
+                let base = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = base.intersection(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+
+                let base = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = base.intersection(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+                let c: Vec<_> = (2..102).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let set: Vec<_> = ab.intersection(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (34..134).collect();
+                let c: Vec<_> = (67..167).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let set: Vec<_> = ab.intersection(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+                let c: Vec<_> = (200..300).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let set: Vec<_> = ab.intersection(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+        }
+
+        mod union {
+            extern crate test;
+            use self::test::Bencher;
+
+            #[bench]
+            fn two_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.union(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (51..151).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.union(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.union(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+                let c: Vec<_> = (2..102).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let set: Vec<_> = ab.union(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (34..134).collect();
+                let c: Vec<_> = (67..167).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let set: Vec<_> = ab.union(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+                let c: Vec<_> = (200..300).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let set: Vec<_> = ab.union(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+        }
     }
 
-    #[bench]
-    fn difference_btree_two_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        let base = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = base.difference(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn difference_btree_two_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        let base = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = base.difference(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn difference_btree_three_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
-            let set: Vec<_> = ab.difference(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn difference_btree_three_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (67..167).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
-            let set: Vec<_> = ab.difference(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn difference_btree_three_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
-            let set: Vec<_> = ab.difference(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_two_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = a.intersection(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_two_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        let base = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = base.intersection(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_two_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        let base = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = base.intersection(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_three_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
-            let set: Vec<_> = ab.intersection(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_three_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (67..167).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
-            let set: Vec<_> = ab.intersection(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn intersection_btree_three_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
-            let set: Vec<_> = ab.intersection(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_two_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = a.union(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_two_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = a.union(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_two_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-
-        bench.iter(|| {
-            let set: Vec<_> = a.union(&b).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_three_slices_big(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.union(&b).cloned().collect();
-            let set: Vec<_> = ab.union(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_three_slices_big2(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (67..167).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.union(&b).cloned().collect();
-            let set: Vec<_> = ab.union(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_btree_three_slices_big3(bench: &mut Bencher) {
-        use std::collections::BTreeSet;
-        use std::iter::FromIterator;
-
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
-
-        let a = BTreeSet::from_iter(a);
-        let b = BTreeSet::from_iter(b);
-        let c = BTreeSet::from_iter(c);
-
-        bench.iter(|| {
-            let ab: BTreeSet<_> = a.union(&b).cloned().collect();
-            let set: Vec<_> = ab.union(&c).cloned().collect();
-            test::black_box(|| set);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_three_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_three_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (67..167).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
-    }
-
-    #[bench]
-    fn union_sort_dedup_three_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
-
-        bench.iter(|| {
-            let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-            elements.sort_unstable();
-            elements.dedup();
-
-            test::black_box(|| elements);
-        });
+    mod vec {
+        mod union {
+            extern crate test;
+            use self::test::Bencher;
+
+            #[bench]
+            fn two_slices_big(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big2(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (51..151).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big3(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+                let c: Vec<_> = (2..102).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big2(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (34..134).collect();
+                let c: Vec<_> = (67..167).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big3(bench: &mut Bencher) {
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+                let c: Vec<_> = (200..300).collect();
+
+                bench.iter(|| {
+                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
+                    elements.sort_unstable();
+                    elements.dedup();
+
+                    test::black_box(|| elements);
+                });
+            }
+        }
     }
 }
