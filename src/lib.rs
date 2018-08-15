@@ -432,17 +432,25 @@ mod bench {
             extern crate test;
             use self::test::Bencher;
 
+            fn create_vec_set<T: Ord + Clone>(slices: &[&[T]]) -> Vec<T> {
+                let alloc = slices.iter().map(|v| v.len()).sum();
+                let mut set = Vec::with_capacity(alloc);
+                for slice in slices {
+                    set.extend_from_slice(slice);
+                }
+                set.sort_unstable();
+                set.dedup();
+                set
+            }
+
             #[bench]
             fn two_slices_big(bench: &mut Bencher) {
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b]);
+                    test::black_box(|| elements.len());
                 });
             }
 
@@ -452,11 +460,8 @@ mod bench {
                 let b: Vec<_> = (51..151).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b]);
+                    test::black_box(|| elements.len());
                 });
             }
 
@@ -466,11 +471,8 @@ mod bench {
                 let b: Vec<_> = (100..200).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b]);
+                    test::black_box(|| elements.len());
                 });
             }
 
@@ -481,11 +483,8 @@ mod bench {
                 let c: Vec<_> = (2..102).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b, &c]);
+                    test::black_box(|| elements.len());
                 });
             }
 
@@ -496,11 +495,8 @@ mod bench {
                 let c: Vec<_> = (67..167).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b, &c]);
+                    test::black_box(|| elements.len());
                 });
             }
 
@@ -511,11 +507,8 @@ mod bench {
                 let c: Vec<_> = (200..300).collect();
 
                 bench.iter(|| {
-                    let mut elements: Vec<_> = vec![&a, &b, &c].into_iter().flatten().cloned().collect();
-                    elements.sort_unstable();
-                    elements.dedup();
-
-                    test::black_box(|| elements);
+                    let elements = create_vec_set(&[&a, &b, &c]);
+                    test::black_box(|| elements.len());
                 });
             }
         }
