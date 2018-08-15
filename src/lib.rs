@@ -107,11 +107,11 @@ mod bench {
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let base = BTreeSet::from_iter(a);
+                let a = BTreeSet::from_iter(a);
                 let b = BTreeSet::from_iter(b);
 
                 bench.iter(|| {
-                    let set: Vec<_> = base.difference(&b).cloned().collect();
+                    let set: Vec<_> = a.difference(&b).cloned().collect();
                     test::black_box(|| set);
                 });
             }
@@ -124,11 +124,11 @@ mod bench {
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let base = BTreeSet::from_iter(a);
+                let a = BTreeSet::from_iter(a);
                 let b = BTreeSet::from_iter(b);
 
                 bench.iter(|| {
-                    let set: Vec<_> = base.difference(&b).cloned().collect();
+                    let set: Vec<_> = a.difference(&b).cloned().collect();
                     test::black_box(|| set);
                 });
             }
@@ -147,7 +147,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let ab = &a - &b;
                     let set: Vec<_> = ab.difference(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -167,7 +167,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let ab = &a - &b;
                     let set: Vec<_> = ab.difference(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -187,7 +187,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.difference(&b).cloned().collect();
+                    let ab = &a - &b;
                     let set: Vec<_> = ab.difference(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -223,11 +223,11 @@ mod bench {
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let base = BTreeSet::from_iter(a);
+                let a = BTreeSet::from_iter(a);
                 let b = BTreeSet::from_iter(b);
 
                 bench.iter(|| {
-                    let set: Vec<_> = base.intersection(&b).cloned().collect();
+                    let set: Vec<_> = a.intersection(&b).cloned().collect();
                     test::black_box(|| set);
                 });
             }
@@ -240,11 +240,11 @@ mod bench {
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let base = BTreeSet::from_iter(a);
+                let a = BTreeSet::from_iter(a);
                 let b = BTreeSet::from_iter(b);
 
                 bench.iter(|| {
-                    let set: Vec<_> = base.intersection(&b).cloned().collect();
+                    let set: Vec<_> = a.intersection(&b).cloned().collect();
                     test::black_box(|| set);
                 });
             }
@@ -263,7 +263,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let ab = &a & &b;
                     let set: Vec<_> = ab.intersection(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -283,7 +283,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let ab = &a & &b;
                     let set: Vec<_> = ab.intersection(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -303,7 +303,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.intersection(&b).cloned().collect();
+                    let ab = &a & &b;
                     let set: Vec<_> = ab.intersection(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -379,7 +379,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let ab = &a | &b;
                     let set: Vec<_> = ab.union(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -399,7 +399,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let ab = &a | &b;
                     let set: Vec<_> = ab.union(&c).cloned().collect();
                     test::black_box(|| set);
                 });
@@ -419,7 +419,7 @@ mod bench {
                 let c = BTreeSet::from_iter(c);
 
                 bench.iter(|| {
-                    let ab: BTreeSet<_> = a.union(&b).cloned().collect();
+                    let ab = &a | &b;
                     let set: Vec<_> = ab.union(&c).cloned().collect();
                     test::black_box(|| set);
                 });
