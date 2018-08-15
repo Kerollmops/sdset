@@ -2,9 +2,9 @@
 
 Set theory applied on sorted and deduplicated slices. Much performances! Such Wow!
 
-`sdset` stands for `sorted-deduplicated-slices-set-operations` which is a little bit too long.
-
 [Documentation](https://docs.rs/sdset) can be found on docs.rs.
+
+`sdset` stands for `sorted-deduplicated-slices-set-operations` which is a little bit too long.
 
 ## Performances
 
@@ -24,7 +24,7 @@ To run the benchmarks you must enable the `unstable` feature.
 $ cargo bench --features unstable
 ```
 
-### Performances
+#### Histograms
 
 Histograms can be generated using the benchmarks by executing the following command:
 
@@ -37,11 +37,11 @@ This is much more easier to read statistics and to see how `sdset` is more perfo
 
 Note that the `sdset` operation does not need many allocation so it starts with a serious advantage. You can see the variance when running benchmarks.
 
-`btree` stands for *two* or *three* `BTreeSet`s which contains runs of integers (see above). These collections are accumulated in a final `BTreeSet`.
+`btree` stands for *two* or *three* `BTreeSet`s which contains runs of integers (see above). The set operation is done on these sets and the final iterator is collected in a final `Vec`.
 
 `vec` benchmarks are available for the union set operation only, it consist of a `Vec` which is populated with the elements of *two* or *three* slices (see above) and that is sorted and deduplicated.
 
-`duo` and `multi` and are the implementations that are part of this crate, the first one can only do set operation on **two** sets and the second one can be used for any given number of sets.
+`duo` and `multi` are the implementations that are part of this crate, the first one can only do set operations on **two** sets and the second one can be used for any given number of sets.
 
 ![difference benchmarks](misc/difference.png)
 

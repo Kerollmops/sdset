@@ -21,18 +21,22 @@ else
     exit 1
 fi
 
-if ! git diff-files --quiet; then
-    echo 'Your repository must not be dirty'
-    exit 1
-fi
+exit_if_dirty() {
+    if ! git diff-files --quiet; then
+        echo 'Your repository must not be dirty'
+        exit 1
+    fi
+}
 
 if [ ! -f $NEW.bench ]; then
+    exit_if_dirty
     git checkout $NEW
     $CARGO_BENCH_CMD > $NEW.bench
     git checkout -
 fi
 
 if [ ! -f $OLD.bench ]; then
+    exit_if_dirty
     git checkout $OLD
     $CARGO_BENCH_CMD > $OLD.bench
     git checkout -
