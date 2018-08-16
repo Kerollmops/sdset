@@ -113,7 +113,6 @@ impl<T> AsRef<Set<T>> for Set<T> {
 }
 
 /// Represent a slice which contains types that are sorted and deduplicated.
-#[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SetBuf<T>(pub(crate) Vec<T>);
 
