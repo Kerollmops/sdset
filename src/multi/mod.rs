@@ -1,4 +1,4 @@
-//! Contains the types to make set operations on multiple slices.
+//! Contains the types to make set operations on any given number of slices.
 //!
 //! # Examples
 //! ```

@@ -1,9 +1,9 @@
 //! Operations for already sorted and deduplicated slices.
 //!
-//! This library contains to kind of set operations:
-//!   - The [`duo`] is limited to be used with two slices not more not less.
-//! The operations are much more performant than the [`multi`].
-//!   - The [`multi`] can be used to do set operations on multiple slices from zero up to an infinite number.
+//! This library contains two modules containing types to produce set operations:
+//!   - The [`duo`] module is for types limited to be used with two slices not more not less.
+//! The operations are much more performant than `multi`.
+//!   - The [`multi`] module types can be used to do set operations on multiple slices from zero up to an infinite number.
 //!
 //! So prefer using the [`duo`] when you know that you will need set operations for two slices.
 //!

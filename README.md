@@ -1,8 +1,11 @@
-# sdset
+# SdSet
+
+[![SdSet crate](https://img.shields.io/crates/v/sdset.svg)](https://crates.io/crates/sdset)
+[![SdSet documentation](https://docs.rs/sdset/badge.svg)](https://docs.rs/sdset)
 
 Set theory applied on sorted and deduplicated slices. Much performance! Such Wow!
 
-[Documentation](https://docs.rs/sdset) can be found on docs.rs.
+[API Documentation can be found on docs.rs](https://docs.rs/sdset).
 
 `sdset` stands for `sorted-deduplicated-slices-set` which is a little bit too long.
 
@@ -12,11 +15,11 @@ Note about the tests, which are done on ranges of integer, if it ends with:
   - `two_slices_big`, the first slice contains `0..100` and the second has `1..101`
   - `two_slices_big2`, the first contains `0..100` and the second has `51..151`
   - `two_slices_big3`, the first contains `0..100` and the second has `100..200`
-  - `three_slices_big`, the first contains `0..100`,the second has `1..101` and the third has `2..102`
+  - `three_slices_big`, the first contains `0..100`, the second has `1..101` and the third has `2..102`
   - `three_slices_big2`, the first contains `0..100`, the second has `34..134` and the third has `67..167`
   - `three_slices_big3`, the first contains `0..100`, the second has `100..200` and the third has `200..300`
 
-These slices of runs of integer are useful when they overlap, we can see how performances changes on different part of the slices overlaps.
+These slices of runs of integer are useful when they overlap, we can see how performances changes when different parts of the slices overlaps.
 
 To run the benchmarks you must enable the `unstable` feature.
 
@@ -32,7 +35,7 @@ The `vec` benchmarks are available for the union set operation only, it consist 
 
 The `duo` and `multi` measurements are the implementations that are part of this crate, the first one can only do set operations on **two** sets and the second one can be used for any given number of sets.
 
-#### Histograms
+### Histograms
 
 Histograms can be generated using the benchmarks by executing the following command:
 
