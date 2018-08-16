@@ -15,15 +15,15 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::duo::OpBuilder;
-//! use sdset::SortDedup;
+//! use sdset::{SetOperation, Set};
 //!
-//! let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
-//! let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+//! let a = Set::new(&[1, 2, 4, 6, 7])?;
+//! let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
 //!
 //! let op = OpBuilder::new(a, b).union();
 //!
-//! let res = op.into_vec();
-//! assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+//! let res = op.into_set_buf();
+//! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();
 //! ```
@@ -34,16 +34,16 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::multi::OpBuilder;
-//! use sdset::SortDedup;
+//! use sdset::{SetOperation, Set};
 //!
-//! let a = SortDedup::new(&[1, 2, 4])?;
-//! let b = SortDedup::new(&[2, 3, 4, 5, 7])?;
-//! let c = SortDedup::new(&[2, 4, 6, 7])?;
+//! let a = Set::new(&[1, 2, 4])?;
+//! let b = Set::new(&[2, 3, 4, 5, 7])?;
+//! let c = Set::new(&[2, 4, 6, 7])?;
 //!
 //! let op = OpBuilder::from_vec(vec![a, b, c]).intersection();
 //!
-//! let res = op.into_vec();
-//! assert_eq!(&res, &[2, 4]);
+//! let res = op.into_set_buf();
+//! assert_eq!(&res[..], &[2, 4]);
 //! # Ok(()) }
 //! # try_main().unwrap();
 //! ```
@@ -55,12 +55,12 @@
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
-mod sort_dedup;
+mod set;
 pub mod multi;
 pub mod duo;
 
-pub use sort_dedup::{
-    SortDedup, Error,
+pub use set::{
+    Set, SetBuf, Error,
     sort_dedup_vec,
     is_sort_dedup,
 };
@@ -72,6 +72,19 @@ fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T]
     match slice.iter().position(|x| x >= elem) {
         Some(pos) => &slice[pos..],
         None => &[],
+    }
+}
+
+/// Represent a type that can produce a set operation on multiple [`Set`]s.
+pub trait SetOperation<T: Ord, U>: Sized {
+    /// Extend a [`Vec`] with the values of the [`Set`]s using this set operation.
+    fn extend_vec(self, output: &mut Vec<U>);
+
+    /// Create a [`SetBuf`] using the [`SetOperation::extend_vec`] method.
+    fn into_set_buf(self) -> SetBuf<U> {
+        let mut vec = Vec::new();
+        self.extend_vec(&mut vec);
+        SetBuf::new_unchecked(vec)
     }
 }
 

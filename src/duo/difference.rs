@@ -1,5 +1,5 @@
-use sort_dedup::SortDedup;
-use ::offset_ge;
+use set::Set;
+use ::{offset_ge, SetOperation};
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -8,15 +8,15 @@ use ::offset_ge;
 /// # use sdset::Error;
 /// # fn try_main() -> Result<(), Error> {
 /// use sdset::duo::OpBuilder;
-/// use sdset::SortDedup;
+/// use sdset::{SetOperation, Set};
 ///
-/// let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
-/// let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+/// let a = Set::new(&[1, 2, 4, 6, 7])?;
+/// let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
 ///
 /// let op = OpBuilder::new(a, b).difference();
 ///
-/// let res = op.into_vec();
-/// assert_eq!(&res, &[1]);
+/// let res = op.into_set_buf();
+/// assert_eq!(&res[..], &[1]);
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
@@ -28,8 +28,8 @@ pub struct Difference<'a, T: 'a> {
 
 impl<'a, T: 'a> Difference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
-    pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
-        Self::new_unchecked(a.into_slice(), b.into_slice())
+    pub fn new(a: &'a Set<T>, b: &'a Set<T>) -> Self {
+        Self::new_unchecked(a.as_slice(), b.as_slice())
     }
 
     /// Construct one with unchecked slices.
@@ -38,9 +38,8 @@ impl<'a, T: 'a> Difference<'a, T> {
     }
 }
 
-impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
-    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn extend_vec(mut self, output: &mut Vec<T>) {
+impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Difference<'a, T> {
+    fn extend_vec(mut self, output: &mut Vec<T>) {
         while let Some(first) = self.a.first() {
             self.b = offset_ge(self.b, first);
             let minimum = self.b.first();
@@ -60,15 +59,7 @@ impl<'a, T: 'a + Ord + Clone> Difference<'a, T> {
             }
         }
     }
-
-    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn into_vec(self) -> Vec<T> {
-        let mut vec = Vec::new();
-        self.extend_vec(&mut vec);
-        vec
-    }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -79,7 +70,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_ = Difference::new_unchecked(a, b).into_vec();
+        let union_ = Difference::new_unchecked(a, b).into_set_buf();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
@@ -88,7 +79,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_ = Difference::new_unchecked(a, b).into_vec();
+        let union_ = Difference::new_unchecked(a, b).into_set_buf();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -103,7 +94,7 @@ mod tests {
             ::sort_dedup_vec(&mut a);
             ::sort_dedup_vec(&mut b);
 
-            let x = Difference::new_unchecked(&a, &b).into_vec();
+            let x = Difference::new_unchecked(&a, &b).into_set_buf();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);
@@ -127,7 +118,7 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -138,7 +129,7 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -149,7 +140,7 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Difference::new_unchecked(&a, &b).into_vec();
+            let union_ = Difference::new_unchecked(&a, &b).into_set_buf();
             test::black_box(|| union_);
         });
     }

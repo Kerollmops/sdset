@@ -5,22 +5,22 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::multi::OpBuilder;
-//! use sdset::SortDedup;
+//! use sdset::{SetOperation, Set};
 //!
-//! let a = SortDedup::new(&[1, 2, 4])?;
-//! let b = SortDedup::new(&[2, 3, 5, 7])?;
-//! let c = SortDedup::new(&[4, 6, 7])?;
+//! let a = Set::new(&[1, 2, 4])?;
+//! let b = Set::new(&[2, 3, 5, 7])?;
+//! let c = Set::new(&[4, 6, 7])?;
 //!
 //! let op = OpBuilder::from_vec(vec![a, b, c]).union();
 //!
-//! let res = op.into_vec();
-//! assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+//! let res = op.into_set_buf();
+//! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();
 //! ```
 
 use std::mem;
-use sort_dedup::SortDedup;
+use set::Set;
 
 mod union;
 mod intersection;
@@ -52,8 +52,8 @@ impl<'a, T> OpBuilder<'a, T> {
     ///
     /// Note that no other allocation than the one of the vec given
     /// in parameter is needed for the construction.
-    pub fn from_vec(slices: Vec<SortDedup<'a, T>>) -> Self {
-        // the SortDedup type is marked as transparent
+    pub fn from_vec(slices: Vec<&'a Set<T>>) -> Self {
+        // the `Set` type is marked as #[repr(C)] (`transparent` is unstable)
         // so it is safe to transmute it to the underlying slice
         // transmuting here is done to avoid doing a useless allocation
         Self::from_vec_unchecked(unsafe { mem::transmute(slices) })

@@ -1,6 +1,7 @@
 use std::mem;
-use sort_dedup::SortDedup;
+use set::Set;
 use self::Minimums::*;
+use ::SetOperation;
 
 /// Represent the _union_ set operation that will be applied to the slices.
 ///
@@ -9,16 +10,16 @@ use self::Minimums::*;
 /// # use sdset::Error;
 /// # fn try_main() -> Result<(), Error> {
 /// use sdset::multi::OpBuilder;
-/// use sdset::SortDedup;
+/// use sdset::{SetOperation, Set};
 ///
-/// let a = SortDedup::new(&[1, 2, 4])?;
-/// let b = SortDedup::new(&[2, 3, 5, 7])?;
-/// let c = SortDedup::new(&[4, 6, 7])?;
+/// let a = Set::new(&[1, 2, 4])?;
+/// let b = Set::new(&[2, 3, 5, 7])?;
+/// let c = Set::new(&[4, 6, 7])?;
 ///
 /// let op = OpBuilder::from_vec(vec![a, b, c]).union();
 ///
-/// let res = op.into_vec();
-/// assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+/// let res = op.into_set_buf();
+/// assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
@@ -29,7 +30,7 @@ pub struct Union<'a, T: 'a> {
 
 impl<'a, T> Union<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
-    pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
+    pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self::new_unchecked(unsafe { mem::transmute(slices) })
     }
 
@@ -68,9 +69,8 @@ fn two_minimums<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Minimums<(usize, &'a T)>
     minimums
 }
 
-impl<'a, T: Ord + Clone> Union<'a, T> {
-    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn extend_vec(mut self, output: &mut Vec<T>) {
+impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Union<'a, T> {
+    fn extend_vec(mut self, output: &mut Vec<T>) {
         if let Some(slice) = self.slices.first() {
             output.reserve(slice.len());
         }
@@ -98,22 +98,16 @@ impl<'a, T: Ord + Clone> Union<'a, T> {
             }
         }
     }
-
-    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn into_vec(self) -> Vec<T> {
-        let mut vec = Vec::new();
-        self.extend_vec(&mut vec);
-        vec
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use set::SetBuf;
 
     #[test]
     fn no_slice() {
-        let union_: Vec<i32> = Union::new_unchecked(vec![]).into_vec();
+        let union_: SetBuf<i32> = Union::new_unchecked(vec![]).into_set_buf();
         assert_eq!(&union_[..], &[]);
     }
 
@@ -121,7 +115,7 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let union_ = Union::new_unchecked(vec![a]).into_vec();
+        let union_ = Union::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&union_[..], &[]);
     }
 
@@ -129,7 +123,7 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let union_ = Union::new_unchecked(vec![a]).into_vec();
+        let union_ = Union::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
@@ -138,7 +132,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[1, 2, 3];
 
-        let union_ = Union::new_unchecked(vec![a, b]).into_vec();
+        let union_ = Union::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
@@ -147,7 +141,7 @@ mod tests {
         let a = &[1];
         let b = &[2];
 
-        let union_ = Union::new_unchecked(vec![a, b]).into_vec();
+        let union_ = Union::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -156,7 +150,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 3, 4];
 
-        let union_ = Union::new_unchecked(vec![a, b]).into_vec();
+        let union_ = Union::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3, 4]);
     }
 
@@ -166,7 +160,7 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5];
 
-        let union_ = Union::new_unchecked(vec![a, b, c]).into_vec();
+        let union_ = Union::new_unchecked(vec![a, b, c]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3, 4, 5]);
     }
 
@@ -184,7 +178,7 @@ mod tests {
 
             let x = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Union::new_unchecked(xss).into_vec()
+                Union::new_unchecked(xss).into_set_buf()
             };
 
             let mut y = BTreeSet::new();
@@ -211,7 +205,7 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -222,7 +216,7 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -233,7 +227,7 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -245,7 +239,7 @@ mod bench {
         let c: Vec<_> = (2..102).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -257,7 +251,7 @@ mod bench {
         let c: Vec<_> = (66..167).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }
@@ -269,7 +263,7 @@ mod bench {
         let c: Vec<_> = (200..300).collect();
 
         bench.iter(|| {
-            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let union_ = Union::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }

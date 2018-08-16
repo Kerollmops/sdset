@@ -1,6 +1,6 @@
 use std::{cmp, mem};
-use sort_dedup::SortDedup;
-use ::offset_ge;
+use set::Set;
+use ::{SetOperation, offset_ge};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -12,16 +12,16 @@ use ::offset_ge;
 /// # use sdset::Error;
 /// # fn try_main() -> Result<(), Error> {
 /// use sdset::multi::OpBuilder;
-/// use sdset::SortDedup;
+/// use sdset::{SetOperation, Set};
 ///
-/// let a = SortDedup::new(&[1, 2, 4])?;
-/// let b = SortDedup::new(&[2, 3, 5, 7])?;
-/// let c = SortDedup::new(&[4, 6, 7])?;
+/// let a = Set::new(&[1, 2, 4])?;
+/// let b = Set::new(&[2, 3, 5, 7])?;
+/// let c = Set::new(&[4, 6, 7])?;
 ///
 /// let op = OpBuilder::from_vec(vec![a, b, c]).difference();
 ///
-/// let res = op.into_vec();
-/// assert_eq!(&res, &[1]);
+/// let res = op.into_set_buf();
+/// assert_eq!(&res[..], &[1]);
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
@@ -32,7 +32,7 @@ pub struct Difference<'a, T: 'a> {
 
 impl<'a, T> Difference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
-    pub fn new(slices: Vec<SortDedup<'a, T>>) -> Self {
+    pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self::new_unchecked(unsafe { mem::transmute(slices) })
     }
 
@@ -42,9 +42,8 @@ impl<'a, T> Difference<'a, T> {
     }
 }
 
-impl<'a, T: Ord + Clone> Difference<'a, T> {
-    /// Extend a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn extend_vec(mut self, output: &mut Vec<T>) {
+impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Difference<'a, T> {
+    fn extend_vec(mut self, output: &mut Vec<T>) {
         let (base, others) = match self.slices.split_first_mut() {
             Some(split) => split,
             None => return,
@@ -77,22 +76,16 @@ impl<'a, T: Ord + Clone> Difference<'a, T> {
             }
         }
     }
-
-    /// Populate a [`Vec`] with the cloned values of the slices using the set operation.
-    pub fn into_vec(self) -> Vec<T> {
-        let mut vec = Vec::new();
-        self.extend_vec(&mut vec);
-        vec
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use set::SetBuf;
 
     #[test]
     fn no_slice() {
-        let difference_: Vec<i32> = Difference::new_unchecked(vec![]).into_vec();
+        let difference_: SetBuf<i32> = Difference::new_unchecked(vec![]).into_set_buf();
         assert_eq!(&difference_[..], &[]);
     }
 
@@ -100,7 +93,7 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let intersection_ = Difference::new_unchecked(vec![a]).into_vec();
+        let intersection_ = Difference::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&intersection_[..], &[]);
     }
 
@@ -108,7 +101,7 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let difference_ = Difference::new_unchecked(vec![a]).into_vec();
+        let difference_ = Difference::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 2, 3]);
     }
 
@@ -117,7 +110,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let difference_ = Difference::new_unchecked(vec![a, b]).into_vec();
+        let difference_ = Difference::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 3]);
     }
 
@@ -126,7 +119,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let difference_ = Difference::new_unchecked(vec![a, b]).into_vec();
+        let difference_ = Difference::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 2]);
     }
 
@@ -136,7 +129,7 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5, 7];
 
-        let difference_ = Difference::new_unchecked(vec![a, b, c]).into_vec();
+        let difference_ = Difference::new_unchecked(vec![a, b, c]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 6]);
     }
 
@@ -154,7 +147,7 @@ mod tests {
 
             let x = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Difference::new_unchecked(xss).into_vec()
+                Difference::new_unchecked(xss).into_set_buf()
             };
 
             let mut xss = xss.into_iter();
@@ -186,7 +179,7 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -197,7 +190,7 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -208,7 +201,7 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -220,7 +213,7 @@ mod bench {
         let c: Vec<_> = (2..102).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -232,7 +225,7 @@ mod bench {
         let c: Vec<_> = (66..167).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -244,7 +237,7 @@ mod bench {
         let c: Vec<_> = (200..300).collect();
 
         bench.iter(|| {
-            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_vec();
+            let difference_ = Difference::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| difference_);
         });
     }

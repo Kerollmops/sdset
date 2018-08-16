@@ -5,20 +5,20 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::duo::OpBuilder;
-//! use sdset::SortDedup;
+//! use sdset::{SetOperation, Set};
 //!
-//! let a = SortDedup::new(&[1, 2, 4, 6, 7])?;
-//! let b = SortDedup::new(&[2, 3, 4, 5, 6, 7])?;
+//! let a = Set::new(&[1, 2, 4, 6, 7])?;
+//! let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
 //!
 //! let op = OpBuilder::new(a, b).union();
 //!
-//! let res = op.into_vec();
-//! assert_eq!(&res, &[1, 2, 3, 4, 5, 6, 7]);
+//! let res = op.into_set_buf();
+//! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();
 //! ```
 
-use sort_dedup::SortDedup;
+use set::Set;
 
 mod union;
 mod difference;
@@ -37,8 +37,8 @@ pub struct OpBuilder<'a, T: 'a> {
 
 impl<'a, T> OpBuilder<'a, T> {
     /// Construct a type with two slices.
-    pub fn new(a: SortDedup<'a, T>, b: SortDedup<'a, T>) -> Self {
-        Self::new_unchecked(a.into_slice(), b.into_slice())
+    pub fn new(a: &'a Set<T>, b: &'a Set<T>) -> Self {
+        Self::new_unchecked(a.as_slice(), b.as_slice())
     }
 
     /// Construct a type with two slices that are not checked to be sorted and deduplicated.

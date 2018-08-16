@@ -4,11 +4,13 @@ description = """
 Set operations for sorted and deduplicated slices.
 Much performances! Such Wow!
 """
+version = "0.2.0"
 documentation = "https://docs.rs/sdset"
+authors = ["Kerollmops <renault.cle@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-version = "0.1.2"
-authors = ["Kerollmops <renault.cle@gmail.com>"]
+keywords = ["set", "operation", "slice", "sort", "dedup"]
+categories = ["algorithms"]
 
 [dev-dependencies]
 quickcheck = "0.6"
