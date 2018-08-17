@@ -19,7 +19,6 @@
 //! # try_main().unwrap();
 //! ```
 
-use std::mem;
 use set::Set;
 
 mod union;
@@ -34,7 +33,7 @@ pub use self::difference::Difference;
 /// and make a set operation on these slices.
 #[derive(Clone)]
 pub struct OpBuilder<'a, T: 'a> {
-    slices: Vec<&'a [T]>,
+    slices: Vec<&'a Set<T>>,
 }
 
 impl<'a, T> OpBuilder<'a, T> {
@@ -53,17 +52,6 @@ impl<'a, T> OpBuilder<'a, T> {
     /// Note that no other allocation than the one of the vec given
     /// in parameter is needed for the construction.
     pub fn from_vec(slices: Vec<&'a Set<T>>) -> Self {
-        // the `Set` type is marked as #[repr(C)] (`transparent` is unstable)
-        // so it is safe to transmute it to the underlying slice
-        // transmuting here is done to avoid doing a useless allocation
-        Self::from_vec_unchecked(unsafe { mem::transmute(slices) })
-    }
-
-    /// Construct it with the content of the given slice
-    /// without checking the slices validity.
-    ///
-    /// Note that is method is called by [`OpBuilder::from_vec`].
-    pub fn from_vec_unchecked(slices: Vec<&'a [T]>) -> Self {
         Self { slices }
     }
 
@@ -72,30 +60,30 @@ impl<'a, T> OpBuilder<'a, T> {
         self.slices.reserve(additional);
     }
 
-    /// Add a new slice that will be used for the future set operation
+    /// Add a new set that will be used for the future set operation
     /// and consume and return the type.
-    pub fn add(mut self, slice: &'a [T]) -> Self {
-        self.push(slice);
+    pub fn add(mut self, set: &'a Set<T>) -> Self {
+        self.push(set);
         self
     }
 
-    /// Push a new slice that will be used for the future set operation.
-    pub fn push(&mut self, slice: &'a [T]) {
-        self.slices.push(slice);
+    /// Push a new set that will be used for the future set operation.
+    pub fn push(&mut self, set: &'a Set<T>) {
+        self.slices.push(set);
     }
 
     /// Prepare the slices for the _union_ set operation.
     pub fn union(self) -> Union<'a, T> {
-        Union::new_unchecked(self.slices)
+        Union::new(self.slices)
     }
 
     /// Prepare the slices for the _intersection_ set operation.
     pub fn intersection(self) -> Intersection<'a, T> {
-        Intersection::new_unchecked(self.slices)
+        Intersection::new(self.slices)
     }
 
     /// Prepare the slices for the _difference_ set operation.
     pub fn difference(self) -> Difference<'a, T> {
-        Difference::new_unchecked(self.slices)
+        Difference::new(self.slices)
     }
 }

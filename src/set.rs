@@ -1,13 +1,15 @@
+//! All the methods and types associated to [`Set`]s.
+
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::{error, fmt, mem};
 
-/// Represent a slice which contains types that are sorted and deduplicated.
+/// Represent a slice which contains types that are sorted and deduplicated (akin to [`str`]).
 ///
 /// This is an *unsized* type, meaning that it must always be used behind a
 /// pointer like `&` or [`Box`]. For an owned version of this type,
 /// see [`SetBuf`].
-#[repr(C)]
+#[repr(C)] // TODO replace by repr(transparent)
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Set<T>([T]);
 
@@ -33,7 +35,7 @@ impl<T> Set<T> {
     pub fn new(slice: &[T]) -> Result<&Self, Error>
     where T: Ord
     {
-        is_sort_dedup(slice).map(|_| Self::new_unchecked(slice) )
+        is_sort_dedup(slice).map(|_| Self::new_unchecked(slice))
     }
 
     /// Construct a [`Set`] without checking it.
@@ -112,9 +114,9 @@ impl<T> AsRef<Set<T>> for Set<T> {
     }
 }
 
-/// Represent a slice which contains types that are sorted and deduplicated.
+/// An owned, set (akin to [`String`]).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SetBuf<T>(pub(crate) Vec<T>);
+pub struct SetBuf<T>(Vec<T>);
 
 impl<T> SetBuf<T> {
     /// Construct a [`SetBuf`] only if it is sorted and deduplicated.
@@ -238,6 +240,59 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {}
+
+/// The list of all [`Error`]s that can occur
+/// while trying to convert a [`slice`](std::slice) to a [`Set`].
+pub type Errors = Vec<Option<Error>>;
+
+/// Construct a [`Vec`] of [`Set`]s only if all slices are sorted and deduplicated.
+///
+/// Otherwise returns the [`Vec`] given in parameter along with a [`Vec`] containing
+/// the possible conversion errors of each slice.
+///
+/// # Examples
+/// ```
+/// use sdset::set::slices_into_sets;
+///
+/// let a = &[1, 2, 3, 4][..];
+/// let b = &[1, 4, 6, 7];
+/// let slices = vec![a, b];
+///
+/// let sets = slices_into_sets(slices).unwrap();
+/// ```
+pub fn slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T]>, Errors)> {
+    let mut has_error = false;
+    let mut errors = Errors::with_capacity(vec.len());
+    for slice in &vec {
+        let res = is_sort_dedup(slice).err();
+        has_error = res.is_some();
+        errors.push(res);
+    }
+
+    if has_error {
+        return Err((vec, errors))
+    }
+
+    Ok(slices_into_sets_unchecked(vec))
+}
+
+/// Transmutes slices without checking them.
+///
+/// # Examples
+/// ```
+/// use sdset::set::slices_into_sets_unchecked;
+///
+/// // these slices are not sorted!
+/// let a = &[1, 6, 4][..];
+/// let b = &[1, 6, 1];
+/// let slices = vec![a, b];
+///
+/// // but we can still create a Vec of Sets, so be carreful!
+/// let sets = slices_into_sets_unchecked(slices);
+/// ```
+pub fn slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
+    unsafe { mem::transmute(vec) }
+}
 
 /// Sort and dedup the vec given in parameter.
 pub fn sort_dedup_vec<T: Ord>(vec: &mut Vec<T>) {

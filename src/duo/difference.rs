@@ -29,12 +29,10 @@ pub struct Difference<'a, T: 'a> {
 impl<'a, T> Difference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: &'a Set<T>, b: &'a Set<T>) -> Self {
-        Self::new_unchecked(a.as_slice(), b.as_slice())
-    }
-
-    /// Construct one with unchecked slices.
-    pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
-        Self { a, b }
+        Self {
+            a: a.as_slice(),
+            b: b.as_slice(),
+        }
     }
 }
 
@@ -78,14 +76,14 @@ impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Difference<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::SetBuf;
+    use set::{sort_dedup_vec, SetBuf};
 
     #[test]
     fn two_slices() {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_: SetBuf<i32> = Difference::new_unchecked(a, b).into_set_buf();
+        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
@@ -94,7 +92,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_: SetBuf<i32> = Difference::new_unchecked(a, b).into_set_buf();
+        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -106,10 +104,10 @@ mod tests {
             let mut a = a;
             let mut b = b;
 
-            ::sort_dedup_vec(&mut a);
-            ::sort_dedup_vec(&mut b);
+            sort_dedup_vec(&mut a);
+            sort_dedup_vec(&mut b);
 
-            let x: SetBuf<i32> = Difference::new_unchecked(&a, &b).into_set_buf();
+            let x: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);
@@ -134,7 +132,7 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference::new_unchecked(&a, &b).into_set_buf();
+            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -145,7 +143,7 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference::new_unchecked(&a, &b).into_set_buf();
+            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
             test::black_box(|| difference_);
         });
     }
@@ -156,7 +154,7 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference::new_unchecked(&a, &b).into_set_buf();
+            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
             test::black_box(|| difference_);
         });
     }

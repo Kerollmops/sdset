@@ -55,15 +55,11 @@
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
-mod set;
+pub mod set;
 pub mod multi;
 pub mod duo;
 
-pub use set::{
-    Set, SetBuf, Error,
-    sort_dedup_vec,
-    is_sort_dedup,
-};
+pub use set::{Set, SetBuf, Error};
 
 /// Returns the slice but with its start advanced to an element
 /// that is greater or equal to the one given in parameter.

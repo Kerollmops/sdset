@@ -31,33 +31,28 @@ pub use self::intersection::Intersection;
 /// Type used to make a set operation on two slices only.
 #[derive(Copy, Clone)]
 pub struct OpBuilder<'a, T: 'a> {
-    a: &'a [T],
-    b: &'a [T],
+    a: &'a Set<T>,
+    b: &'a Set<T>,
 }
 
 impl<'a, T> OpBuilder<'a, T> {
     /// Construct a type with two slices.
     pub fn new(a: &'a Set<T>, b: &'a Set<T>) -> Self {
-        Self::new_unchecked(a.as_slice(), b.as_slice())
-    }
-
-    /// Construct a type with two slices that are not checked to be sorted and deduplicated.
-    pub fn new_unchecked(a: &'a [T], b: &'a [T]) -> Self {
         Self { a, b }
     }
 
     /// Prepare the two slices for the _union_ set operation.
     pub fn union(self) -> Union<'a, T> {
-        Union::new_unchecked(self.a, self.b)
+        Union::new(self.a, self.b)
     }
 
     /// Prepare the two slices for the _intersection_ set operation.
     pub fn intersection(self) -> Intersection<'a, T> {
-        Intersection::new_unchecked(self.a, self.b)
+        Intersection::new(self.a, self.b)
     }
 
     /// Prepare the two slices for the _difference_ set operation.
     pub fn difference(self) -> Difference<'a, T> {
-        Difference::new_unchecked(self.a, self.b)
+        Difference::new(self.a, self.b)
     }
 }
