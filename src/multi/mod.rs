@@ -5,7 +5,7 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::multi::OpBuilder;
-//! use sdset::{SetOperation, Set};
+//! use sdset::{SetOperation, Set, SetBuf};
 //!
 //! let a = Set::new(&[1, 2, 4])?;
 //! let b = Set::new(&[2, 3, 5, 7])?;
@@ -13,7 +13,7 @@
 //!
 //! let op = OpBuilder::from_vec(vec![a, b, c]).union();
 //!
-//! let res = op.into_set_buf();
+//! let res: SetBuf<i32> = op.into_set_buf();
 //! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();

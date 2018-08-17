@@ -5,14 +5,14 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::duo::OpBuilder;
-//! use sdset::{SetOperation, Set};
+//! use sdset::{SetOperation, Set, SetBuf};
 //!
 //! let a = Set::new(&[1, 2, 4, 6, 7])?;
 //! let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
 //!
 //! let op = OpBuilder::new(a, b).union();
 //!
-//! let res = op.into_set_buf();
+//! let res: SetBuf<i32> = op.into_set_buf();
 //! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();

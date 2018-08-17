@@ -13,7 +13,7 @@ use self::Equality::*;
 /// # use sdset::Error;
 /// # fn try_main() -> Result<(), Error> {
 /// use sdset::multi::OpBuilder;
-/// use sdset::{SetOperation, Set};
+/// use sdset::{SetOperation, Set, SetBuf};
 ///
 /// let a = Set::new(&[1, 2, 4])?;
 /// let b = Set::new(&[2, 3, 4, 5, 7])?;
@@ -21,7 +21,7 @@ use self::Equality::*;
 ///
 /// let op = OpBuilder::from_vec(vec![a, b, c]).intersection();
 ///
-/// let res = op.into_set_buf();
+/// let res: SetBuf<i32> = op.into_set_buf();
 /// assert_eq!(&res[..], &[2, 4]);
 /// # Ok(()) }
 /// # try_main().unwrap();
@@ -49,7 +49,7 @@ enum Equality<'a, T: 'a> {
 }
 
 #[inline]
-fn test_equality<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
+fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
     let mut is_equal = true;
     let mut max = &slices[0][0];
     for x in slices {
@@ -60,15 +60,17 @@ fn test_equality<'a, T: 'a + Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
     if is_equal { Equal(max) } else { NotEqual(max) }
 }
 
-impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Intersection<'a, T> {
-    fn extend_vec(mut self, output: &mut Vec<T>) {
+impl<'a, T: Ord> Intersection<'a, T> {
+    fn extend_vec<U, F>(mut self, output: &mut Vec<U>, push: F)
+    where F: Fn(&mut Vec<U>, &'a T)
+    {
         if self.slices.is_empty() { return }
         if self.slices.iter().any(|s| s.is_empty()) { return }
 
         loop {
             match test_equality(&self.slices) {
                 Equal(x) => {
-                    output.push(x.clone());
+                    push(output, x);
                     for slice in &mut self.slices {
                         *slice = &slice[1..];
                         if slice.is_empty() { return }
@@ -82,6 +84,18 @@ impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Intersection<'a, T> {
                 }
             }
         }
+    }
+}
+
+impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Intersection<'a, T> {
+    fn extend_vec(self, output: &mut Vec<T>) {
+        self.extend_vec(output, |v, x| v.push(x.clone()))
+    }
+}
+
+impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Intersection<'a, T> {
+    fn extend_vec(self, output: &mut Vec<&'a T>) {
+        self.extend_vec(output, |v, x| v.push(x))
     }
 }
 
@@ -100,7 +114,7 @@ mod tests {
     fn one_empty_slice() {
         let a: &[i32] = &[];
 
-        let intersection_ = Intersection::new_unchecked(vec![a]).into_set_buf();
+        let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&intersection_[..], &[]);
     }
 
@@ -108,7 +122,7 @@ mod tests {
     fn one_slice() {
         let a = &[1, 2, 3];
 
-        let intersection_ = Intersection::new_unchecked(vec![a]).into_set_buf();
+        let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![a]).into_set_buf();
         assert_eq!(&intersection_[..], &[1, 2, 3]);
     }
 
@@ -117,7 +131,7 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 3, 4];
 
-        let intersection_ = Intersection::new_unchecked(vec![a, b]).into_set_buf();
+        let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![a, b]).into_set_buf();
         assert_eq!(&intersection_[..], &[2, 3]);
     }
 
@@ -127,7 +141,7 @@ mod tests {
         let b = &[2, 3, 4];
         let c = &[3, 4, 5];
 
-        let intersection_ = Intersection::new_unchecked(vec![a, b, c]).into_set_buf();
+        let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![a, b, c]).into_set_buf();
         assert_eq!(&intersection_[..], &[3]);
     }
 
@@ -143,7 +157,7 @@ mod tests {
                 ::sort_dedup_vec(xs);
             }
 
-            let x = {
+            let x: SetBuf<i32> = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
                 Intersection::new_unchecked(xss).into_set_buf()
             };
@@ -170,6 +184,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
+    use set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
@@ -177,7 +192,7 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }
@@ -188,7 +203,7 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }
@@ -199,7 +214,7 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }
@@ -211,7 +226,7 @@ mod bench {
         let c: Vec<_> = (2..102).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }
@@ -223,7 +238,7 @@ mod bench {
         let c: Vec<_> = (66..167).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }
@@ -235,7 +250,7 @@ mod bench {
         let c: Vec<_> = (200..300).collect();
 
         bench.iter(|| {
-            let intersection_ = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
+            let intersection_: SetBuf<i32> = Intersection::new_unchecked(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| intersection_);
         });
     }

@@ -15,14 +15,14 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::duo::OpBuilder;
-//! use sdset::{SetOperation, Set};
+//! use sdset::{SetOperation, Set, SetBuf};
 //!
 //! let a = Set::new(&[1, 2, 4, 6, 7])?;
 //! let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
 //!
 //! let op = OpBuilder::new(a, b).union();
 //!
-//! let res = op.into_set_buf();
+//! let res: SetBuf<i32> = op.into_set_buf();
 //! assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
 //! # Ok(()) }
 //! # try_main().unwrap();
@@ -34,7 +34,7 @@
 //! # use sdset::Error;
 //! # fn try_main() -> Result<(), Error> {
 //! use sdset::multi::OpBuilder;
-//! use sdset::{SetOperation, Set};
+//! use sdset::{SetOperation, Set, SetBuf};
 //!
 //! let a = Set::new(&[1, 2, 4])?;
 //! let b = Set::new(&[2, 3, 4, 5, 7])?;
@@ -42,7 +42,7 @@
 //!
 //! let op = OpBuilder::from_vec(vec![a, b, c]).intersection();
 //!
-//! let res = op.into_set_buf();
+//! let res: SetBuf<i32> = op.into_set_buf();
 //! assert_eq!(&res[..], &[2, 4]);
 //! # Ok(()) }
 //! # try_main().unwrap();
@@ -76,7 +76,7 @@ fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T]
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
-pub trait SetOperation<T: Ord, U>: Sized {
+pub trait SetOperation<T, U>: Sized {
     /// Extend a [`Vec`] with the values of the [`Set`]s using this set operation.
     fn extend_vec(self, output: &mut Vec<U>);
 
