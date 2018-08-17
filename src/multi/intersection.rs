@@ -58,6 +58,7 @@ fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
 }
 
 impl<'a, T: Ord> Intersection<'a, T> {
+    #[inline]
     fn extend_vec<U, F>(mut self, output: &mut Vec<U>, push: F)
     where F: Fn(&mut Vec<U>, &'a T)
     {

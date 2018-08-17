@@ -38,6 +38,7 @@ impl<'a, T> Union<'a, T> {
 }
 
 impl<'a, T: Ord> Union<'a, T> {
+    #[inline]
     fn extend_vec<U, F, G>(mut self, output: &mut Vec<U>, extend: F, push: G)
     where F: Fn(&mut Vec<U>, &'a [T]),
           G: Fn(&mut Vec<U>, &'a T),
