@@ -1,5 +1,5 @@
-use std::{cmp, mem};
-use set::Set;
+use std::cmp;
+use set::{Set, vec_sets_into_slices};
 use ::{SetOperation, offset_ge};
 
 use self::Equality::*;
@@ -35,7 +35,7 @@ impl<'a, T> Intersection<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self {
-            slices: unsafe { mem::transmute(slices) },
+            slices: vec_sets_into_slices(slices),
         }
     }
 }
@@ -93,7 +93,7 @@ impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Intersection<'a, T> {
 
 impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Intersection<'a, T> {
     fn extend_vec(self, output: &mut Vec<&'a T>) {
-        self.extend_vec(output, |v, x| v.push(x))
+        self.extend_vec(output, Vec::push)
     }
 }
 

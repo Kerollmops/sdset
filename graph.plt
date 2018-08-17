@@ -5,7 +5,7 @@ textcolor = "#1a1a1a"
 set title benchname tc rgb textcolor
 
 # stdout a png image
-set terminal png size 720,480 enhanced
+set terminal png size 720,480 noenhanced
 
 set auto x
 set auto y

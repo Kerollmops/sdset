@@ -58,6 +58,7 @@
 pub mod set;
 pub mod multi;
 pub mod duo;
+mod two_minimums;
 
 pub use set::{Set, SetBuf, Error};
 
@@ -430,6 +431,122 @@ mod bench {
                 bench.iter(|| {
                     let ab = &a | &b;
                     let set: Vec<_> = ab.union(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+        }
+
+        mod symmetric_difference {
+            extern crate test;
+            use self::test::Bencher;
+
+            #[bench]
+            fn two_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (51..151).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn two_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+
+                bench.iter(|| {
+                    let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (1..101).collect();
+                let c: Vec<_> = (2..102).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab = &a ^ &b;
+                    let set: Vec<_> = ab.symmetric_difference(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big2(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (34..134).collect();
+                let c: Vec<_> = (67..167).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab = &a ^ &b;
+                    let set: Vec<_> = ab.symmetric_difference(&c).cloned().collect();
+                    test::black_box(|| set);
+                });
+            }
+
+            #[bench]
+            fn three_slices_big3(bench: &mut Bencher) {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let a: Vec<_> = (0..100).collect();
+                let b: Vec<_> = (100..200).collect();
+                let c: Vec<_> = (200..300).collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let c = BTreeSet::from_iter(c);
+
+                bench.iter(|| {
+                    let ab = &a ^ &b;
+                    let set: Vec<_> = ab.symmetric_difference(&c).cloned().collect();
                     test::black_box(|| set);
                 });
             }

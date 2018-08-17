@@ -51,3 +51,5 @@ This is much more easier to read statistics and to see how `sdset` is more perfo
 ![intersection benchmarks](misc/intersection.png)
 
 ![union benchmarks](misc/union.png)
+
+![symmetric difference benchmarks](misc/symmetric_difference.png)

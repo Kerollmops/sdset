@@ -23,10 +23,12 @@ use set::Set;
 mod union;
 mod difference;
 mod intersection;
+mod symmetric_difference;
 
 pub use self::union::Union;
 pub use self::difference::Difference;
 pub use self::intersection::Intersection;
+pub use self::symmetric_difference::SymmetricDifference;
 
 /// Type used to make a set operation on two slices only.
 #[derive(Copy, Clone)]
@@ -54,5 +56,10 @@ impl<'a, T> OpBuilder<'a, T> {
     /// Prepare the two slices for the _difference_ set operation.
     pub fn difference(self) -> Difference<'a, T> {
         Difference::new(self.a, self.b)
+    }
+
+    /// Prepare the two slices for the _difference_ set operation.
+    pub fn symmetric_difference(self) -> SymmetricDifference<'a, T> {
+        SymmetricDifference::new(self.a, self.b)
     }
 }

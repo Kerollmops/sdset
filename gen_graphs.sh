@@ -17,5 +17,6 @@ cargo run --manifest-path gen-bench-data/Cargo.toml -- $COMMIT.bench
 gnuplot -e "benchname='difference'" graph.plt > misc/difference.png
 gnuplot -e "benchname='intersection'" graph.plt > misc/intersection.png
 gnuplot -e "benchname='union'" graph.plt > misc/union.png
+gnuplot -e "benchname='symmetric_difference'" graph.plt > misc/symmetric_difference.png
 
 echo "Graphs successfully generated!"

@@ -260,7 +260,7 @@ pub type Errors = Vec<Option<Error>>;
 ///
 /// let sets = slices_into_sets(slices).unwrap();
 /// ```
-pub fn slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T]>, Errors)> {
+pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T]>, Errors)> {
     let mut has_error = false;
     let mut errors = Errors::with_capacity(vec.len());
     for slice in &vec {
@@ -273,7 +273,7 @@ pub fn slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T
         return Err((vec, errors))
     }
 
-    Ok(slices_into_sets_unchecked(vec))
+    Ok(vec_slices_into_sets_unchecked(vec))
 }
 
 /// Transmutes slices without checking them.
@@ -290,8 +290,25 @@ pub fn slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T
 /// // but we can still create a Vec of Sets, so be carreful!
 /// let sets = slices_into_sets_unchecked(slices);
 /// ```
-pub fn slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
+pub fn vec_slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
     unsafe { mem::transmute(vec) }
+}
+
+/// Safely transmute a [`Vec`] of [`Set`]s into a [`Vec`] of [`slice`](std::slice).
+///
+/// Note that the values that are parts of the returned
+/// slices will be ordered and deduplicated.
+pub fn vec_sets_into_slices<T>(vec: Vec<&Set<T>>) -> Vec<&[T]> {
+    unsafe { mem::transmute(vec) }
+}
+
+/// Safely transmute a [`slice`](std::slice) of [`Set`]s into
+/// a [`slice`](std::slice) of [`slice`](std::slice).
+///
+/// Note that the values that are parts of the returned
+/// slices will be ordered and deduplicated.
+pub fn slice_sets_into_slices<'a, T: 'a>(slice: &'a [&'a Set<T>]) -> &'a [&'a [T]] {
+    unsafe { mem::transmute(slice) }
 }
 
 /// Sort and dedup the vec given in parameter.

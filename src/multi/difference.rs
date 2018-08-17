@@ -1,5 +1,5 @@
-use std::{cmp, mem};
-use set::Set;
+use std::cmp;
+use set::{Set, vec_sets_into_slices};
 use ::{SetOperation, offset_ge};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
@@ -34,7 +34,7 @@ impl<'a, T> Difference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self {
-            slices: unsafe { mem::transmute(slices) },
+            slices: vec_sets_into_slices(slices),
         }
     }
 }

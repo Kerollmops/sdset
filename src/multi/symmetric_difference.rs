@@ -2,7 +2,7 @@ use set::{Set, vec_sets_into_slices};
 use two_minimums::{two_minimums, Minimums::*};
 use ::SetOperation;
 
-/// Represent the _union_ set operation that will be applied to the slices.
+/// Represent the _symmetric difference_ set operation that will be applied to the slices.
 ///
 /// # Examples
 /// ```
@@ -15,19 +15,19 @@ use ::SetOperation;
 /// let b = Set::new(&[2, 3, 5, 7])?;
 /// let c = Set::new(&[4, 6, 7])?;
 ///
-/// let op = OpBuilder::from_vec(vec![a, b, c]).union();
+/// let op = OpBuilder::from_vec(vec![a, b, c]).symmetric_difference();
 ///
 /// let res: SetBuf<i32> = op.into_set_buf();
-/// assert_eq!(&res[..], &[1, 2, 3, 4, 5, 6, 7]);
+/// assert_eq!(&res[..], &[1, 3, 5, 6]);
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
 #[derive(Clone)]
-pub struct Union<'a, T: 'a> {
+pub struct SymmetricDifference<'a, T: 'a> {
     slices: Vec<&'a [T]>,
 }
 
-impl<'a, T> Union<'a, T> {
+impl<'a, T> SymmetricDifference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self {
@@ -36,16 +36,12 @@ impl<'a, T> Union<'a, T> {
     }
 }
 
-impl<'a, T: Ord> Union<'a, T> {
+impl<'a, T: Ord> SymmetricDifference<'a, T> {
     #[inline]
     fn extend_vec<U, F, G>(mut self, output: &mut Vec<U>, extend: F, push: G)
     where F: Fn(&mut Vec<U>, &'a [T]),
           G: Fn(&mut Vec<U>, &'a T),
     {
-        if let Some(slice) = self.slices.first() {
-            output.reserve(slice.len());
-        }
-
         loop {
             match two_minimums(&self.slices) {
                 Two((i, f), (_, s)) => {
@@ -54,10 +50,17 @@ impl<'a, T: Ord> Union<'a, T> {
                         extend(output, &self.slices[i][..off]);
                         self.slices[i] = &self.slices[i][off..];
                     }
-                    push(output, s);
-                    for slice in &mut self.slices {
-                        if slice.first() == Some(s) {
-                            *slice = &slice[1..];
+                    else {
+                        let mut count = 0;
+                        for slice in self.slices.iter_mut() {
+                            if slice.first() == Some(f) {
+                                count += 1;
+                                *slice = &slice[1..];
+                            }
+                        }
+                        // if count is odd
+                        if count % 2 != 0 {
+                            push(output, f);
                         }
                     }
                 },
@@ -71,15 +74,13 @@ impl<'a, T: Ord> Union<'a, T> {
     }
 }
 
-
-
-impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Union<'a, T> {
+impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for SymmetricDifference<'a, T> {
     fn extend_vec(self, output: &mut Vec<T>) {
         self.extend_vec(output, Vec::extend_from_slice, |v, x| v.push(x.clone()));
     }
 }
 
-impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Union<'a, T> {
+impl<'a, T: Ord> SetOperation<&'a T, &'a T> for SymmetricDifference<'a, T> {
     fn extend_vec(self, output: &mut Vec<&'a T>) {
         self.extend_vec(output, Extend::extend, Vec::push);
     }
@@ -90,67 +91,8 @@ mod tests {
     use super::*;
     use set::{sort_dedup_vec, SetBuf};
 
-    #[test]
-    fn no_slice() {
-        let union_: SetBuf<i32> = Union { slices: vec![] }.into_set_buf();
-        assert_eq!(&union_[..], &[]);
-    }
-
-    #[test]
-    fn one_empty_slice() {
-        let a: &[i32] = &[];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
-        assert_eq!(&union_[..], &[]);
-    }
-
-    #[test]
-    fn one_slice() {
-        let a = &[1, 2, 3];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
-
-    #[test]
-    fn two_slices_equal() {
-        let a = &[1, 2, 3];
-        let b = &[1, 2, 3];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
-
-    #[test]
-    fn two_slices_little() {
-        let a = &[1];
-        let b = &[2];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2]);
-    }
-
-    #[test]
-    fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn three_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5];
-
-        let union_: SetBuf<i32> = Union { slices: vec![a, b, c] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3, 4, 5]);
-    }
-
     quickcheck! {
-        fn qc_union(xss: Vec<Vec<i32>>) -> bool {
+        fn qc_symmetric_difference(xss: Vec<Vec<i32>>) -> bool {
             use std::collections::BTreeSet;
             use std::iter::FromIterator;
 
@@ -163,13 +105,13 @@ mod tests {
 
             let x: SetBuf<i32> = {
                 let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Union { slices: xss }.into_set_buf()
+                SymmetricDifference { slices: xss }.into_set_buf()
             };
 
             let mut y = BTreeSet::new();
             for v in xss {
                 let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.union(&x).cloned().collect();
+                y = y.symmetric_difference(&x).cloned().collect();
             }
             let y: Vec<_> = y.into_iter().collect();
 
@@ -191,8 +133,8 @@ mod bench {
         let b: Vec<_> = (1..101).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 
@@ -202,8 +144,8 @@ mod bench {
         let b: Vec<_> = (51..151).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 
@@ -213,8 +155,8 @@ mod bench {
         let b: Vec<_> = (100..200).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 
@@ -225,8 +167,8 @@ mod bench {
         let c: Vec<_> = (2..102).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b, &c] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 
@@ -237,8 +179,8 @@ mod bench {
         let c: Vec<_> = (66..167).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b, &c] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 
@@ -249,8 +191,8 @@ mod bench {
         let c: Vec<_> = (200..300).collect();
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
-            test::black_box(|| union_);
+            let symdiff_: SetBuf<i32> = SymmetricDifference { slices: vec![&a, &b, &c] }.into_set_buf();
+            test::black_box(|| symdiff_);
         });
     }
 }
