@@ -48,6 +48,9 @@
 //! # try_main().unwrap();
 //! ```
 
+// FIXME remove me
+#![feature(extern_prelude)]
+
 #![warn(missing_docs)]
 
 #![cfg_attr(feature = "unstable", feature(test))]
