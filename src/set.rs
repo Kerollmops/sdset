@@ -278,6 +278,9 @@ pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec
 
 /// Transmutes slices without checking them.
 ///
+/// This is useful when you don't want to introduce another allocation to
+/// your program and you are sure all these slices are valid [`Set`]s.
+///
 /// # Examples
 /// ```
 /// use sdset::set::vec_slices_into_sets_unchecked;
@@ -296,6 +299,8 @@ pub fn vec_slices_into_sets_unchecked<'a, T: 'a>(vec: Vec<&'a [T]>) -> Vec<&'a S
 
 /// Safely transmute a [`Vec`] of [`Set`]s into a [`Vec`] of [`slice`](std::slice).
 ///
+/// This is useful when you don't want to introduce another allocation to your program.
+///
 /// Note that the values that are parts of the returned
 /// slices will be ordered and deduplicated.
 pub fn vec_sets_into_slices<'a, T: 'a>(vec: Vec<&'a Set<T>>) -> Vec<&'a [T]> {
@@ -304,6 +309,8 @@ pub fn vec_sets_into_slices<'a, T: 'a>(vec: Vec<&'a Set<T>>) -> Vec<&'a [T]> {
 
 /// Safely transmute a [`slice`](std::slice) of [`Set`]s into
 /// a [`slice`](std::slice) of [`slice`](std::slice).
+///
+/// This is useful when you don't want to introduce another allocation to your program.
 ///
 /// Note that the values that are parts of the returned
 /// slices will be ordered and deduplicated.
