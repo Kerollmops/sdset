@@ -556,21 +556,22 @@ mod bench {
         }
     }
 
-    mod _hash {
+    mod _fnv {
         mod difference {
             extern crate test;
+            extern crate fnv;
             use self::test::Bencher;
 
             #[bench]
             fn two_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.difference(&b).cloned().collect();
@@ -580,14 +581,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.difference(&b).cloned().collect();
@@ -597,14 +598,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.difference(&b).cloned().collect();
@@ -614,16 +615,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
                 let c: Vec<_> = (2..102).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a - &b;
@@ -634,16 +635,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (34..134).collect();
                 let c: Vec<_> = (67..167).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a - &b;
@@ -654,16 +655,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
                 let c: Vec<_> = (200..300).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a - &b;
@@ -675,18 +676,19 @@ mod bench {
 
         mod intersection {
             extern crate test;
+            extern crate fnv;
             use self::test::Bencher;
 
             #[bench]
             fn two_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.intersection(&b).cloned().collect();
@@ -696,14 +698,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.intersection(&b).cloned().collect();
@@ -713,14 +715,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.intersection(&b).cloned().collect();
@@ -730,16 +732,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
                 let c: Vec<_> = (2..102).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a & &b;
@@ -750,16 +752,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (34..134).collect();
                 let c: Vec<_> = (67..167).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a & &b;
@@ -770,16 +772,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
                 let c: Vec<_> = (200..300).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a & &b;
@@ -791,18 +793,19 @@ mod bench {
 
         mod union {
             extern crate test;
+            extern crate fnv;
             use self::test::Bencher;
 
             #[bench]
             fn two_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.union(&b).cloned().collect();
@@ -812,14 +815,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.union(&b).cloned().collect();
@@ -829,14 +832,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.union(&b).cloned().collect();
@@ -846,16 +849,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
                 let c: Vec<_> = (2..102).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a | &b;
@@ -866,16 +869,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (34..134).collect();
                 let c: Vec<_> = (67..167).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a | &b;
@@ -886,16 +889,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
                 let c: Vec<_> = (200..300).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a | &b;
@@ -907,18 +910,19 @@ mod bench {
 
         mod symmetric_difference {
             extern crate test;
+            extern crate fnv;
             use self::test::Bencher;
 
             #[bench]
             fn two_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
@@ -928,14 +932,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (51..151).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
@@ -945,14 +949,14 @@ mod bench {
 
             #[bench]
             fn two_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
 
                 bench.iter(|| {
                     let set: Vec<_> = a.symmetric_difference(&b).cloned().collect();
@@ -962,16 +966,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (1..101).collect();
                 let c: Vec<_> = (2..102).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a ^ &b;
@@ -982,16 +986,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big2(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (34..134).collect();
                 let c: Vec<_> = (67..167).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a ^ &b;
@@ -1002,16 +1006,16 @@ mod bench {
 
             #[bench]
             fn three_slices_big3(bench: &mut Bencher) {
-                use std::collections::HashSet;
+                use self::fnv::FnvHashSet;
                 use std::iter::FromIterator;
 
                 let a: Vec<_> = (0..100).collect();
                 let b: Vec<_> = (100..200).collect();
                 let c: Vec<_> = (200..300).collect();
 
-                let a: HashSet<i32> = HashSet::from_iter(a);
-                let b = HashSet::from_iter(b);
-                let c = HashSet::from_iter(c);
+                let a: FnvHashSet<i32> = FnvHashSet::from_iter(a);
+                let b = FnvHashSet::from_iter(b);
+                let c = FnvHashSet::from_iter(c);
 
                 bench.iter(|| {
                     let ab = &a ^ &b;

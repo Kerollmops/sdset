@@ -31,7 +31,7 @@ Note that the `sdset` set operations does not need many allocations so it starts
 
 `_btree` are benchmarks that uses *two* or *three* `BTreeSet`s which contains runs of integers (see above), the `BTreeSet`s creations are not taken into account. The set operations are done on these sets and the result is accumulated in a final `Vec`.
 
-`_hash` are benchmarks that uses *two* or *three* `HashSet`s which contains runs of integers (see above), the `HashSet`s creations are not taken into account. The set operations are done on these sets and the result is accumulated in a final `Vec`.
+`_fnv` are benchmarks that uses *two* or *three* `HashSet`s which contains runs of integers (see above), it uses [a custom `Hasher` named `fnv`](https://github.com/servo/rust-fnv) that is specialized for little values like integers, the `HashSet`s creations are not taken into account. The set operations are done on these sets and the result is accumulated in a final `Vec`.
 
 The `_vec` benchmarks are available for the union set operation only, it consist of a `Vec` which is populated with the elements of *two* or *three* slices (see above), sorted and deduplicated.
 

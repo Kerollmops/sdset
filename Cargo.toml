@@ -15,6 +15,7 @@ categories = ["algorithms"]
 
 [dev-dependencies]
 quickcheck = "0.6"
+fnv = "1.0"
 
 [features]
 unstable = []
