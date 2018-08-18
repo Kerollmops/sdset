@@ -48,13 +48,36 @@ impl<T> Set<T> {
     /// // this slice is not sorted
     /// let slice = &[1, 2, 4, 7, 6];
     ///
-    /// // but we can still create a Set, so be carreful!
+    /// // but we can still create a Set, so be careful!
     /// let set = Set::new_unchecked(slice);
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
     pub fn new_unchecked(slice: &[T]) -> &Self {
         unsafe { mem::transmute(slice) }
+    }
+
+    /// Returns `true` if the set contains an element with the given value.
+    ///
+    /// This function can use a binary search algorithm internally
+    /// because it knows that the elements are ordered.
+    ///
+    /// ```
+    /// # use sdset::Error;
+    /// # fn try_main() -> Result<(), Error> {
+    /// use sdset::Set;
+    ///
+    /// let slice = &[1, 2, 4, 6, 7];
+    /// let set = Set::new(slice)?;
+    ///
+    /// assert!(set.contains(&4));
+    /// # Ok(()) }
+    /// # try_main().unwrap();
+    /// ```
+    pub fn contains(&self, x: &T) -> bool
+    where T: Ord
+    {
+        self.as_slice().binary_search(x).is_ok()
     }
 
     /// Construct the owning version of the [`Set`].
@@ -153,7 +176,7 @@ impl<T> SetBuf<T> {
     /// // this vec is not sorted
     /// let vec = vec![1, 2, 4, 7, 6];
     ///
-    /// // but we can still create a SetBuf, so be carreful!
+    /// // but we can still create a SetBuf, so be careful!
     /// let setbuf = SetBuf::new_unchecked(vec);
     /// # Ok(()) }
     /// # try_main().unwrap();
@@ -290,7 +313,7 @@ pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec
 /// let b = &[1, 6, 1];
 /// let slices = vec![a, b];
 ///
-/// // but we can still create a Vec of Sets, so be carreful!
+/// // but we can still create a Vec of Sets, so be careful!
 /// let sets = vec_slices_into_sets_unchecked(slices);
 /// ```
 pub fn vec_slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
