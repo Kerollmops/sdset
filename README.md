@@ -21,6 +21,8 @@ Note about the tests, which are done on ranges of integer, if it ends with:
 
 These slices of runs of integer are useful when they overlap, we can see how performances changes when different parts of the slices overlaps.
 
+For more informations on "Why is there no really big slices benchmarks ?", you can see [my response on /r/rust](https://www.reddit.com/r/rust/comments/98ahv5/sdset_set_theory_applied_on_sorted_and/e4ervlc/).
+
 To run the benchmarks you must enable the `unstable` feature.
 
 ```bash
