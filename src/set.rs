@@ -53,7 +53,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
-    pub fn new_unchecked(slice: &[T]) -> &Self {
+    pub fn new_unchecked<'a>(slice: &'a [T]) -> &'a Self {
         unsafe { mem::transmute(slice) }
     }
 
@@ -290,7 +290,7 @@ pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec
 /// // but we can still create a Vec of Sets, so be carreful!
 /// let sets = slices_into_sets_unchecked(slices);
 /// ```
-pub fn vec_slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
+pub fn vec_slices_into_sets_unchecked<'a, T: 'a>(vec: Vec<&'a [T]>) -> Vec<&'a Set<T>> {
     unsafe { mem::transmute(vec) }
 }
 
@@ -298,7 +298,7 @@ pub fn vec_slices_into_sets_unchecked<T>(vec: Vec<&[T]>) -> Vec<&Set<T>> {
 ///
 /// Note that the values that are parts of the returned
 /// slices will be ordered and deduplicated.
-pub fn vec_sets_into_slices<T>(vec: Vec<&Set<T>>) -> Vec<&[T]> {
+pub fn vec_sets_into_slices<'a, T: 'a>(vec: Vec<&'a Set<T>>) -> Vec<&'a [T]> {
     unsafe { mem::transmute(vec) }
 }
 

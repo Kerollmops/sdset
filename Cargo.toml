@@ -4,7 +4,7 @@ description = """
 Set operations for sorted and deduplicated slices.
 Much performances! Such Wow!
 """
-version = "0.2.2"
+version = "0.2.3"
 documentation = "https://docs.rs/sdset"
 repository = "https://github.com/Kerollmops/sdset"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
