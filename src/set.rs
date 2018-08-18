@@ -252,13 +252,13 @@ pub type Errors = Vec<Option<Error>>;
 ///
 /// # Examples
 /// ```
-/// use sdset::set::slices_into_sets;
+/// use sdset::set::vec_slices_into_sets;
 ///
 /// let a = &[1, 2, 3, 4][..];
 /// let b = &[1, 4, 6, 7];
 /// let slices = vec![a, b];
 ///
-/// let sets = slices_into_sets(slices).unwrap();
+/// let sets = vec_slices_into_sets(slices).unwrap();
 /// ```
 pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec<&[T]>, Errors)> {
     let mut has_error = false;
@@ -280,7 +280,7 @@ pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec
 ///
 /// # Examples
 /// ```
-/// use sdset::set::slices_into_sets_unchecked;
+/// use sdset::set::vec_slices_into_sets_unchecked;
 ///
 /// // these slices are not sorted!
 /// let a = &[1, 6, 4][..];
@@ -288,7 +288,7 @@ pub fn vec_slices_into_sets<T: Ord>(vec: Vec<&[T]>) -> Result<Vec<&Set<T>>, (Vec
 /// let slices = vec![a, b];
 ///
 /// // but we can still create a Vec of Sets, so be carreful!
-/// let sets = slices_into_sets_unchecked(slices);
+/// let sets = vec_slices_into_sets_unchecked(slices);
 /// ```
 pub fn vec_slices_into_sets_unchecked<'a, T: 'a>(vec: Vec<&'a [T]>) -> Vec<&'a Set<T>> {
     unsafe { mem::transmute(vec) }
