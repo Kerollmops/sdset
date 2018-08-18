@@ -6,13 +6,14 @@ set -x
 # to use a custom `cargo bench` command if needed
 CARGO_BENCH_CMD=${CARGO_BENCH_CMD:-cargo bench}
 
-COMMIT=$(git rev-parse --short 'HEAD')
-
-if [ ! -f $COMMIT.bench ]; then
-    $CARGO_BENCH_CMD > $COMMIT.bench
+if [ $# -eq 1 ]; then
+    $CARGO_BENCH_CMD > $1.bench
+else
+    echo 'Usage: gen_graphs.sh $BENCH_FILE'
+    exit 1
 fi
 
-cargo run --manifest-path gen-bench-data/Cargo.toml -- $COMMIT.bench
+cargo run --manifest-path gen-bench-data/Cargo.toml -- $1.bench
 
 gnuplot -e "benchname='difference'" graph.plt > misc/difference.png
 gnuplot -e "benchname='intersection'" graph.plt > misc/intersection.png
