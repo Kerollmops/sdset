@@ -13,7 +13,7 @@ else
     exit 1
 fi
 
-cargo run --manifest-path gen-bench-data/Cargo.toml -- $1.bench
+cargo run --release --manifest-path gen-bench-data/Cargo.toml -- $1.bench
 
 gnuplot -e "benchname='difference'" graph.plt > misc/difference.png
 gnuplot -e "benchname='intersection'" graph.plt > misc/intersection.png
