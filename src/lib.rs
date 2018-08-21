@@ -63,6 +63,7 @@ pub mod multi;
 pub mod duo;
 mod two_minimums;
 
+use std::cmp;
 pub use set::{Set, SetBuf, Error};
 
 /// Returns the slice but with its start advanced to an element
@@ -76,8 +77,24 @@ fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 }
 
 #[inline]
-fn binary_search_offset_ge<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    match slice.binary_search(elem) {
+fn exponential_search<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> Result<usize, usize> {
+    let mut bound = 1;
+    while bound < slice.len() && &slice[bound] < elem {
+        bound *= 2;
+    }
+
+    let half_bound = bound / 2;
+    let bound = cmp::min(bound, slice.len());
+
+    match slice[half_bound..bound].binary_search(elem) {
+        Ok(pos) => Ok(half_bound + pos),
+        Err(pos) => Err(half_bound + pos),
+    }
+}
+
+#[inline]
+fn exponential_search_offset_ge<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> &'a [T] {
+    match exponential_search(slice, elem) {
         Ok(pos) => &slice[pos..],
         Err(pos) => &slice[pos..],
     }
