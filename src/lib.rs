@@ -68,10 +68,18 @@ pub use set::{Set, SetBuf, Error};
 /// Returns the slice but with its start advanced to an element
 /// that is greater or equal to the one given in parameter.
 #[inline]
-fn offset_ge<'a, 'b, T: 'a + PartialOrd>(slice: &'a [T], elem: &'b T) -> &'a [T] {
+fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
     match slice.iter().position(|x| x >= elem) {
         Some(pos) => &slice[pos..],
         None => &[],
+    }
+}
+
+#[inline]
+fn binary_search_offset_ge<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> &'a [T] {
+    match slice.binary_search(elem) {
+        Ok(pos) => &slice[pos..],
+        Err(pos) => &slice[pos..],
     }
 }
 

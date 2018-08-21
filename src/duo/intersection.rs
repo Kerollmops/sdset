@@ -1,6 +1,6 @@
 use std::cmp;
 use set::Set;
-use ::{SetOperation, offset_ge};
+use ::{SetOperation, binary_search_offset_ge};
 
 /// Represent the _intersection_ set operation that will be applied to two slices.
 ///
@@ -55,8 +55,8 @@ impl<'a, T: Ord> Intersection<'a, T> {
             }
             else {
                 let max = cmp::max(a, b);
-                self.a = offset_ge(self.a, max);
-                self.b = offset_ge(self.b, max);
+                self.a = binary_search_offset_ge(self.a, max);
+                self.b = binary_search_offset_ge(self.b, max);
             }
         }
     }
