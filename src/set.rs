@@ -3,6 +3,7 @@
 use std::cmp::Ordering;
 use std::ops::Deref;
 use std::{error, fmt, mem};
+use ::exponential_search;
 
 /// Represent a slice which contains types that are sorted and deduplicated (akin to [`str`]).
 ///
@@ -59,8 +60,8 @@ impl<T> Set<T> {
 
     /// Returns `true` if the set contains an element with the given value.
     ///
-    /// This function can use a binary search algorithm internally
-    /// because it knows that the elements are ordered.
+    /// This function uses exponential searching internally
+    /// because it is verified that the elements are ordered.
     ///
     /// ```
     /// # use sdset::Error;
@@ -77,7 +78,7 @@ impl<T> Set<T> {
     pub fn contains(&self, x: &T) -> bool
     where T: Ord
     {
-        self.as_slice().binary_search(x).is_ok()
+        exponential_search(self.as_slice(), x).is_ok()
     }
 
     /// Construct the owning version of the [`Set`].
