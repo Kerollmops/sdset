@@ -77,14 +77,14 @@ fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 }
 
 #[inline]
-fn exponential_search<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> Result<usize, usize> {
-    let mut bound = 1;
-    while bound < slice.len() && &slice[bound] < elem {
-        bound *= 2;
+fn exponential_search<T: Ord>(slice: &[T], elem: &T) -> Result<usize, usize> {
+    let mut index = 1;
+    while index < slice.len() && &slice[index] < elem {
+        index *= 2;
     }
 
-    let half_bound = bound / 2;
-    let bound = cmp::min(bound, slice.len());
+    let half_bound = index / 2;
+    let bound = cmp::min(index + 1, slice.len());
 
     match slice[half_bound..bound].binary_search(elem) {
         Ok(pos) => Ok(half_bound + pos),
