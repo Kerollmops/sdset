@@ -18,9 +18,8 @@ impl<T> Set<T> {
     /// Construct a [`Set`] only if it is sorted and deduplicated.
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::Set;
     ///
     /// let slice = &[1, 2, 4, 6, 7];
     /// let set = Set::new(slice)?;
@@ -42,9 +41,8 @@ impl<T> Set<T> {
     /// Construct a [`Set`] without checking it.
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::Set;
     ///
     /// // this slice is not sorted
     /// let slice = &[1, 2, 4, 7, 6];
@@ -64,9 +62,8 @@ impl<T> Set<T> {
     /// because it is verified that the elements are ordered.
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::Set;
     ///
     /// let slice = &[1, 2, 4, 6, 7];
     /// let set = Set::new(slice)?;
@@ -84,9 +81,8 @@ impl<T> Set<T> {
     /// Construct the owning version of the [`Set`].
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::{Set, SetBuf};
     ///
     /// let set = Set::new(&[1, 2, 4, 6, 7])?;
     /// let setbuf: SetBuf<_> = set.to_set_buf();
@@ -102,9 +98,8 @@ impl<T> Set<T> {
     /// Return the slice "inside" of this [`Set`].
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::Set;
     ///
     /// let slice = &[1, 2, 4, 6, 7];
     /// let set = Set::new(slice)?;
@@ -146,9 +141,8 @@ impl<T> SetBuf<T> {
     /// Construct a [`SetBuf`] only if it is sorted and deduplicated.
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::SetBuf;
     ///
     /// let vec = vec![1, 2, 4, 6, 7];
     /// let setbuf = SetBuf::new(vec)?;
@@ -170,9 +164,8 @@ impl<T> SetBuf<T> {
     /// Construct a [`SetBuf`] without checking it.
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::SetBuf;
     ///
     /// // this vec is not sorted
     /// let vec = vec![1, 2, 4, 7, 6];
@@ -189,9 +182,8 @@ impl<T> SetBuf<T> {
     /// Return the [`Set`] owned by this [`SetBuf`].
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{Set, SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::{Set, SetBuf};
     ///
     /// let vec = vec![1, 2, 4, 6, 7];
     /// let setbuf = SetBuf::new(vec.clone())?;
@@ -208,9 +200,8 @@ impl<T> SetBuf<T> {
     /// Return the [`Vec`] inside by this [`SetBuf`].
     ///
     /// ```
-    /// # use sdset::Error;
+    /// use sdset::{SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// use sdset::SetBuf;
     ///
     /// let vec = vec![1, 2, 4, 6, 7];
     /// let setbuf = SetBuf::new(vec)?;
