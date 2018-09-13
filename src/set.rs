@@ -128,8 +128,9 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
-    pub fn contains(&self, x: &T) -> bool
-    where T: Ord
+    pub fn contains<K>(&self, x: &K) -> bool
+    where K: Ord + ?Sized,
+          T: Borrow<K>,
     {
         exponential_search(self.as_slice(), x).is_ok()
     }
