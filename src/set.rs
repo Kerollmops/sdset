@@ -1,7 +1,8 @@
 //! All the methods and types associated to [`Set`]s.
 
 use std::cmp::Ordering;
-use std::ops::Deref;
+use std::borrow::Borrow;
+use std::ops::{Deref, RangeBounds, Bound};
 use std::{error, fmt, mem};
 use ::exponential_search;
 
@@ -54,6 +55,61 @@ impl<T> Set<T> {
     /// ```
     pub fn new_unchecked(slice: &[T]) -> &Self {
         unsafe { mem::transmute(slice) }
+    }
+
+    /// Returns a [`Set`] containing all the values in the given range.
+    ///
+    /// This function uses exponential searching internally
+    /// because it is verified that the elements are ordered.
+    ///
+    /// ```
+    /// use std::ops::Bound::{Excluded, Included};
+    /// use sdset::{Set, Error};
+    /// # fn try_main() -> Result<(), Error> {
+    ///
+    /// let set = Set::new(&[1, 2, 4, 6, 7])?;
+    ///
+    /// let subset = set.range(2..=6);
+    /// assert_eq!(subset.as_slice(), &[2, 4, 6]);
+    ///
+    /// let subset = set.range(3..5);
+    /// assert_eq!(subset.as_slice(), &[4]);
+    ///
+    /// let subset = set.range((Excluded(&2), Included(&7)));
+    /// assert_eq!(subset.as_slice(), &[4, 6, 7]);
+    /// # Ok(()) }
+    /// # try_main().unwrap();
+    /// ```
+    pub fn range<K, R>(&self, range: R) -> &Self
+    where K: Ord + ?Sized,
+          R: RangeBounds<K>,
+          T: Borrow<K>,
+    {
+        let left = match range.start_bound() {
+            Bound::Included(x) => match exponential_search(self, x) {
+                Ok(index) => index,
+                Err(index) => index,
+            },
+            Bound::Excluded(x) => match exponential_search(self, x) {
+                Ok(index) => index + 1,
+                Err(index) => index,
+            },
+            Bound::Unbounded => 0,
+        };
+
+        let right = match range.end_bound() {
+            Bound::Included(x) => match exponential_search(self, x) {
+                Ok(index) => index + 1,
+                Err(index) => index,
+            },
+            Bound::Excluded(x) => match exponential_search(self, x) {
+                Ok(index) => index,
+                Err(index) => index,
+            },
+            Bound::Unbounded => self.len(),
+        };
+
+        Self::new_unchecked(&self[left..right])
     }
 
     /// Returns `true` if the set contains an element with the given value.
@@ -349,4 +405,27 @@ pub fn is_sort_dedup<T: Ord>(slice: &[T]) -> Result<(), Error> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ops::Bound::*;
+
+    #[test]
+    fn range_set() {
+        let set = Set::new(&[1, 2, 4, 6, 7]).unwrap();
+
+        let subset = set.range((Excluded(1), Unbounded));
+        assert_eq!(subset.as_slice(), &[2, 4, 6, 7]);
+
+        let subset = set.range((Excluded(1), Included(4)));
+        assert_eq!(subset.as_slice(), &[2, 4]);
+
+        let subset = set.range((Excluded(0), Included(4)));
+        assert_eq!(subset.as_slice(), &[1, 2, 4]);
+
+        let subset = set.range((Unbounded, Excluded(10)));
+        assert_eq!(subset.as_slice(), &[1, 2, 4, 6, 7]);
+    }
 }

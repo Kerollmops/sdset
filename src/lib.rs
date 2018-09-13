@@ -64,6 +64,7 @@ pub mod duo;
 mod two_minimums;
 
 use std::cmp;
+use std::borrow::Borrow;
 pub use set::{Set, SetBuf, Error};
 
 /// Returns the slice but with its start advanced to an element
@@ -77,16 +78,19 @@ fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 }
 
 #[inline]
-fn exponential_search<T: Ord>(slice: &[T], elem: &T) -> Result<usize, usize> {
+fn exponential_search<K, T>(slice: &[T], elem: &K) -> Result<usize, usize>
+where K: Ord + ?Sized,
+      T: Borrow<K>,
+{
     let mut index = 1;
-    while index < slice.len() && &slice[index] < elem {
+    while index < slice.len() && slice[index].borrow() < elem {
         index *= 2;
     }
 
     let half_bound = index / 2;
     let bound = cmp::min(index + 1, slice.len());
 
-    match slice[half_bound..bound].binary_search(elem) {
+    match slice[half_bound..bound].binary_search_by(|x| x.borrow().cmp(elem)) {
         Ok(pos) => Ok(half_bound + pos),
         Err(pos) => Err(half_bound + pos),
     }
