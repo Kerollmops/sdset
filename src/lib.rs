@@ -74,8 +74,31 @@ fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
     }
 }
 
+/// Exponential searches this sorted slice for a given element.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use sdset::exponential_search;
+///
+/// let s = &[0, 1, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+///
+/// assert_eq!(exponential_search(s, &13),  Ok(9));
+/// assert_eq!(exponential_search(s, &4),   Err(7));
+/// assert_eq!(exponential_search(s, &100), Err(13));
+/// let r = exponential_search(s, &1);
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
 #[inline]
-fn exponential_search<K, T>(slice: &[T], elem: &K) -> Result<usize, usize>
+pub fn exponential_search<K, T>(slice: &[T], elem: &K) -> Result<usize, usize>
 where K: Ord + ?Sized,
       T: Borrow<K>,
 {
