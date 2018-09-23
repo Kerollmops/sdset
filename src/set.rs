@@ -33,6 +33,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn new(slice: &[T]) -> Result<&Self, Error>
     where T: Ord
     {
@@ -53,6 +54,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn new_unchecked(slice: &[T]) -> &Self {
         unsafe { mem::transmute(slice) }
     }
@@ -80,6 +82,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn range<K, R>(&self, range: R) -> &Self
     where K: Ord + ?Sized,
           R: RangeBounds<K>,
@@ -119,6 +122,7 @@ impl<T> Set<T> {
     /// could be inserted while maintaining sorted order.
     ///
     /// See the [`exponential_search`] documentation for more details.
+    #[inline]
     pub fn exponential_search<K>(&self, elem: &K) -> Result<usize, usize>
     where K: Ord + ?Sized,
           T: Borrow<K>,
@@ -142,6 +146,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn contains<K>(&self, x: &K) -> bool
     where K: Ord + ?Sized,
           T: Borrow<K>,
@@ -160,6 +165,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn to_set_buf(&self) -> SetBuf<T>
     where T: Clone
     {
@@ -179,6 +185,7 @@ impl<T> Set<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
         &self.0
     }
@@ -226,6 +233,7 @@ impl<T> SetBuf<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn new(vec: Vec<T>) -> Result<Self, Error>
     where T: Ord
     {
@@ -246,6 +254,7 @@ impl<T> SetBuf<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn new_unchecked(vec: Vec<T>) -> Self {
         SetBuf(vec)
     }
@@ -264,6 +273,7 @@ impl<T> SetBuf<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn as_set(&self) -> &Set<T> {
         Set::new_unchecked(self.0.as_slice())
     }
@@ -281,6 +291,7 @@ impl<T> SetBuf<T> {
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
+    #[inline]
     pub fn into_vec(self) -> Vec<T> {
         self.0
     }
