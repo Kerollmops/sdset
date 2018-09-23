@@ -86,11 +86,11 @@ impl<T> Set<T> {
           T: Borrow<K>,
     {
         let left = match range.start_bound() {
-            Bound::Included(x) => match exponential_search(self, x) {
+            Bound::Included(x) => match self.exponential_search(x) {
                 Ok(index) => index,
                 Err(index) => index,
             },
-            Bound::Excluded(x) => match exponential_search(self, x) {
+            Bound::Excluded(x) => match self.exponential_search(x) {
                 Ok(index) => index + 1,
                 Err(index) => index,
             },
@@ -98,11 +98,11 @@ impl<T> Set<T> {
         };
 
         let right = match range.end_bound() {
-            Bound::Included(x) => match exponential_search(self, x) {
+            Bound::Included(x) => match self.exponential_search(x) {
                 Ok(index) => index + 1,
                 Err(index) => index,
             },
-            Bound::Excluded(x) => match exponential_search(self, x) {
+            Bound::Excluded(x) => match self.exponential_search(x) {
                 Ok(index) => index,
                 Err(index) => index,
             },
@@ -110,6 +110,20 @@ impl<T> Set<T> {
         };
 
         Self::new_unchecked(&self[left..right])
+    }
+
+    /// Exponential searches this sorted slice for a given element.
+    ///
+    /// If the value is found then `Ok` is returned, containing the index of the matching element;
+    /// if the value is not found then `Err` is returned, containing the index where a matching element
+    /// could be inserted while maintaining sorted order.
+    ///
+    /// See the [`exponential_search`] documentation for more details.
+    pub fn exponential_search<K>(&self, elem: &K) -> Result<usize, usize>
+    where K: Ord + ?Sized,
+          T: Borrow<K>,
+    {
+        exponential_search(self, elem)
     }
 
     /// Returns `true` if the set contains an element with the given value.
@@ -132,7 +146,7 @@ impl<T> Set<T> {
     where K: Ord + ?Sized,
           T: Borrow<K>,
     {
-        exponential_search(self.as_slice(), x).is_ok()
+        self.exponential_search(x).is_ok()
     }
 
     /// Construct the owning version of the [`Set`].
