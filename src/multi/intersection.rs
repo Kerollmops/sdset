@@ -85,13 +85,13 @@ impl<'a, T: Ord> Intersection<'a, T> {
     }
 }
 
-impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Intersection<'a, T> {
+impl<'a, T: Ord + Clone> SetOperation<T> for Intersection<'a, T> {
     fn extend_vec(self, output: &mut Vec<T>) {
         self.extend_vec(output, |v, x| v.push(x.clone()))
     }
 }
 
-impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Intersection<'a, T> {
+impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
     fn extend_vec(self, output: &mut Vec<&'a T>) {
         self.extend_vec(output, Vec::push)
     }

@@ -125,12 +125,12 @@ fn exponential_search_offset_ge<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) ->
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
-pub trait SetOperation<T, U>: Sized {
+pub trait SetOperation<T>: Sized {
     /// Extend a [`Vec`] with the values of the [`Set`]s using this set operation.
-    fn extend_vec(self, output: &mut Vec<U>);
+    fn extend_vec(self, output: &mut Vec<T>);
 
     /// Create a [`SetBuf`] using the [`SetOperation::extend_vec`] method.
-    fn into_set_buf(self) -> SetBuf<U> {
+    fn into_set_buf(self) -> SetBuf<T> {
         let mut vec = Vec::new();
         self.extend_vec(&mut vec);
         SetBuf::new_unchecked(vec)

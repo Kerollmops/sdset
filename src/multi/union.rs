@@ -73,13 +73,13 @@ impl<'a, T: Ord> Union<'a, T> {
 
 
 
-impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for Union<'a, T> {
+impl<'a, T: Ord + Clone> SetOperation<T> for Union<'a, T> {
     fn extend_vec(self, output: &mut Vec<T>) {
         self.extend_vec(output, Vec::extend_from_slice, |v, x| v.push(x.clone()));
     }
 }
 
-impl<'a, T: Ord> SetOperation<&'a T, &'a T> for Union<'a, T> {
+impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
     fn extend_vec(self, output: &mut Vec<&'a T>) {
         self.extend_vec(output, Extend::extend, Vec::push);
     }

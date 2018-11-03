@@ -77,13 +77,13 @@ impl<'a, T: Ord> SymmetricDifference<'a, T> {
     }
 }
 
-impl<'a, T: Ord + Clone> SetOperation<&'a T, T> for SymmetricDifference<'a, T> {
+impl<'a, T: Ord + Clone> SetOperation<T> for SymmetricDifference<'a, T> {
     fn extend_vec(self, output: &mut Vec<T>) {
         self.extend_vec(output, Vec::extend_from_slice)
     }
 }
 
-impl<'a, T: Ord> SetOperation<&'a T, &'a T> for SymmetricDifference<'a, T> {
+impl<'a, T: Ord> SetOperation<&'a T> for SymmetricDifference<'a, T> {
     fn extend_vec(self, output: &mut Vec<&'a T>) {
         self.extend_vec(output, Extend::extend)
     }
