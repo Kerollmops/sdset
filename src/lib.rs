@@ -55,9 +55,10 @@
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
-pub mod set;
-pub mod multi;
 pub mod duo;
+pub mod multi;
+pub mod polymorphic;
+pub mod set;
 mod two_minimums;
 
 use std::cmp;
