@@ -66,6 +66,10 @@ impl<'a, T> OpBuilder<'a, T> {
     }
 }
 
+/// Type used to make a set operation on two slices of different types.
+///
+/// The two functions are used to generate a key that will be used to
+/// make the set operation and correlate the two slices values.
 #[derive(Copy, Clone)]
 pub struct OpBuilderByKey<'a, T: 'a, U: 'a, F, G, K>
 where F: Fn(&T) -> K,

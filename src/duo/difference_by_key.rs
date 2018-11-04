@@ -1,6 +1,41 @@
 use set::Set;
 use SetOperation;
 
+/// Represent the _difference_ set operation that will be applied to two slices of different types.
+///
+/// # Examples
+/// ```
+/// # use sdset::Error;
+/// # fn try_main() -> Result<(), Error> {
+/// use sdset::duo::OpBuilderByKey;
+/// use sdset::{SetOperation, Set, SetBuf};
+///
+/// #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+/// struct Foo { a: i32, b: u8 }
+///
+/// let a = Set::new(&[
+///     Foo{ a: 1, b: 6 },
+///     Foo{ a: 1, b: 7 },
+///     Foo{ a: 1, b: 8 },
+///     Foo{ a: 2, b: 9 },
+///     Foo{ a: 2, b: 10 },
+///     Foo{ a: 3, b: 10 },
+/// ])?;
+/// let b = Set::new(&[1, 3, 4, 5]).unwrap();
+///
+/// // Return the field of Foo that will be used for comparison
+/// let f = |x: &Foo| x.a;
+///
+/// // directly use the i32 for comparison
+/// let g = |x: &i32| *x;
+///
+/// let op = OpBuilderByKey::new(a, b, f, g).difference();
+/// let res: SetBuf<Foo> = op.into_set_buf();
+///
+/// assert_eq!(res.as_slice(), &[Foo{ a: 2, b: 9 }, Foo{ a: 2, b: 10 }][..]);
+/// # Ok(()) }
+/// # try_main().unwrap();
+/// ```
 #[derive(Copy, Clone)]
 pub struct DifferenceByKey<'a, T: 'a, U: 'a, F, G, K>
 where F: Fn(&T) -> K,

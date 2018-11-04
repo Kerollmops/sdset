@@ -11,7 +11,7 @@ use ::exponential_search;
 /// This is an *unsized* type, meaning that it must always be used behind a
 /// pointer like `&` or [`Box`]. For an owned version of this type,
 /// see [`SetBuf`].
-#[repr(C)] // TODO replace by repr(transparent)
+#[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Set<T>([T]);
 
