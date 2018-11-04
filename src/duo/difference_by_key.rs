@@ -2,7 +2,7 @@ use set::Set;
 use SetOperation;
 
 #[derive(Copy, Clone)]
-pub struct Difference<'a, T: 'a, U: 'a, F, G, K>
+pub struct DifferenceByKey<'a, T: 'a, U: 'a, F, G, K>
 where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
@@ -13,7 +13,7 @@ where F: Fn(&T) -> K,
     g: G,
 }
 
-impl<'a, T, U, F, G, K> Difference<'a, T, U, F, G, K>
+impl<'a, T, U, F, G, K> DifferenceByKey<'a, T, U, F, G, K>
 where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
@@ -40,7 +40,7 @@ where F: Fn(&'a T) -> K,
     }
 }
 
-impl<'a, T, U, F, G, K> Difference<'a, T, U, F, G, K>
+impl<'a, T, U, F, G, K> DifferenceByKey<'a, T, U, F, G, K>
 where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
@@ -71,7 +71,7 @@ where F: Fn(&T) -> K,
     }
 }
 
-impl<'a, T, U, F, G, K> SetOperation<T> for Difference<'a, T, U, F, G, K>
+impl<'a, T, U, F, G, K> SetOperation<T> for DifferenceByKey<'a, T, U, F, G, K>
 where T: Clone,
       F: Fn(&T) -> K,
       G: Fn(&U) -> K,
@@ -82,7 +82,7 @@ where T: Clone,
     }
 }
 
-impl<'a, T, U, F, G, K> SetOperation<&'a T> for Difference<'a, T, U, F, G, K>
+impl<'a, T, U, F, G, K> SetOperation<&'a T> for DifferenceByKey<'a, T, U, F, G, K>
 where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
@@ -114,7 +114,7 @@ mod tests {
         ]);
         let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
 
-        let difference: SetBuf<Foo> = Difference::new(a, b, |x| x.a, |&x| x).into_set_buf();
+        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
 
         assert!(difference.is_empty());
     }
@@ -130,7 +130,7 @@ mod tests {
         ]);
         let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
 
-        let difference: SetBuf<Foo> = Difference::new(a, b, |x| x.a, |&x| x).into_set_buf();
+        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
 
         assert!(difference.is_empty());
     }
@@ -146,7 +146,7 @@ mod tests {
         ]);
         let b = Set::new(&[1, 3, 4, 5]).unwrap();
 
-        let difference: SetBuf<Foo> = Difference::new(a, b, |x| x.a, |&x| x).into_set_buf();
+        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
 
         assert_eq!(difference.as_slice(), &[
             Foo{ a: 2, b: 9  },
@@ -166,7 +166,7 @@ mod tests {
             sort_dedup_vec(&mut b);
 
             let x: SetBuf<i32> = {
-                let difference = Difference { a: &a, b: &b, f: |&x| x, g: |&x| x as i32 };
+                let difference = DifferenceByKey { a: &a, b: &b, f: |&x| x, g: |&x| x as i32 };
                 difference.into_set_buf()
             };
 

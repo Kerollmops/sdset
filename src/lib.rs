@@ -57,7 +57,6 @@
 
 pub mod duo;
 pub mod multi;
-pub mod polymorphic;
 pub mod set;
 mod two_minimums;
 

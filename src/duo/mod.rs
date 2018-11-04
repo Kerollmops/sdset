@@ -22,11 +22,13 @@ use set::Set;
 
 mod union;
 mod difference;
+mod difference_by_key;
 mod intersection;
 mod symmetric_difference;
 
 pub use self::union::Union;
 pub use self::difference::Difference;
+pub use self::difference_by_key::DifferenceByKey;
 pub use self::intersection::Intersection;
 pub use self::symmetric_difference::SymmetricDifference;
 
@@ -61,5 +63,33 @@ impl<'a, T> OpBuilder<'a, T> {
     /// Prepare the two slices for the _difference_ set operation.
     pub fn symmetric_difference(self) -> SymmetricDifference<'a, T> {
         SymmetricDifference::new(self.a, self.b)
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct OpBuilderByKey<'a, T: 'a, U: 'a, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    a: &'a Set<T>,
+    b: &'a Set<U>,
+    f: F,
+    g: G,
+}
+
+impl<'a, T, U, F, G, K> OpBuilderByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    /// Construct a type with two slices.
+    pub fn new(a: &'a Set<T>, b: &'a Set<U>, f: F, g: G) -> Self {
+        Self { a, b, f, g }
+    }
+
+    /// Prepare the two slices for the _difference_ set operation.
+    pub fn difference(self) -> DifferenceByKey<'a, T, U, F, G, K> {
+        DifferenceByKey::new(self.a, self.b, self.f, self.g)
     }
 }
