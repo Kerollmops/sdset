@@ -1,5 +1,5 @@
 use set::Set;
-use ::{offset_ge, SetOperation};
+use ::{exponential_offset_ge, SetOperation};
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -42,11 +42,11 @@ impl<'a, T: Ord> Difference<'a, T> {
     where F: Fn(&mut Vec<U>, &'a [T])
     {
         while let Some(first) = self.a.first() {
-            self.b = offset_ge(self.b, first);
+            self.b = exponential_offset_ge(self.b, first);
             let minimum = self.b.first();
 
             match minimum {
-                Some(min) if min == first => self.a = offset_ge(&self.a[1..], min),
+                Some(min) if min == first => self.a = exponential_offset_ge(&self.a[1..], min),
                 Some(min) => {
                     let off = self.a.iter().take_while(|&x| x < min).count();
                     extend(output, &self.a[..off]);

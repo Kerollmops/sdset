@@ -1,6 +1,6 @@
 use std::cmp;
 use set::{Set, vec_sets_into_slices};
-use ::{SetOperation, offset_ge};
+use ::{SetOperation, exponential_offset_ge};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -53,7 +53,7 @@ impl<'a, T: Ord> Difference<'a, T> {
 
             let mut minimum = None;
             for slice in others.iter_mut() {
-                *slice = offset_ge(slice, first);
+                *slice = exponential_offset_ge(slice, first);
                 minimum = match (minimum, slice.first()) {
                     (Some(min), Some(first)) => Some(cmp::min(min, first)),
                     (None, Some(first)) => Some(first),
@@ -62,7 +62,7 @@ impl<'a, T: Ord> Difference<'a, T> {
             }
 
             match minimum {
-                Some(min) if min == first => *base = offset_ge(&base[1..], min),
+                Some(min) if min == first => *base = exponential_offset_ge(&base[1..], min),
                 Some(min) => {
                     let off = base.iter().take_while(|&x| x < min).count();
                     extend(output, &base[..off]);

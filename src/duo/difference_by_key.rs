@@ -1,5 +1,5 @@
 use set::Set;
-use SetOperation;
+use {exponential_offset_ge_by_key, SetOperation};
 
 /// Represent the _difference_ set operation that will be applied to two slices of different types.
 ///
@@ -64,17 +64,6 @@ where F: Fn(&T) -> K,
     }
 }
 
-#[inline]
-fn offset_ge<'a, 'b, T: 'a, F, K>(slice: &'a [T], f: F, elem: &'b K) -> &'a [T]
-where F: Fn(&'a T) -> K,
-      K: PartialOrd,
-{
-    match slice.iter().position(|x| &f(x) >= elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
-    }
-}
-
 impl<'a, T, U, F, G, K> DifferenceByKey<'a, T, U, F, G, K>
 where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
@@ -84,12 +73,12 @@ where F: Fn(&T) -> K,
     where E: Fn(&mut Vec<X>, &'a [T]),
     {
         while let Some(first) = self.a.first().map(|x| (self.f)(x)) {
-            self.b = offset_ge(self.b, &self.g, &first);
+            self.b = exponential_offset_ge_by_key(self.b, &first, &self.g);
 
             match self.b.first().map(|x| (self.g)(x)) {
                 Some(min) => {
                     if min == first {
-                        self.a = offset_ge(&self.a[1..], &self.f, &min)
+                        self.a = exponential_offset_ge_by_key(&self.a[1..], &min, &self.f)
                     } else {
                         let off = self.a.iter().take_while(|&x| (self.f)(x) < min).count();
                         extend(output, &self.a[..off]);
@@ -212,5 +201,68 @@ mod tests {
 
             x.as_slice() == y.as_slice()
         }
+    }
+}
+
+
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    extern crate test;
+    use super::*;
+    use self::test::Bencher;
+    use set::SetBuf;
+
+    #[derive(Debug, Clone)]
+    pub struct Foo {
+        a: i32,
+        b: u8
+    }
+
+    impl Foo {
+        fn new(a: i32) -> Foo {
+            Foo { a, b: 0 }
+        }
+    }
+
+    #[bench]
+    fn two_slices_big(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).map(Foo::new).collect();
+        let b: Vec<_> = (1..101).collect();
+        let f = |x: &Foo| x.a;
+        let g = |x: &i32| *x;
+
+        bench.iter(|| {
+            let op = DifferenceByKey { a: &a, b: &b, f, g };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            test::black_box(|| res);
+        });
+    }
+
+    #[bench]
+    fn two_slices_big2(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).map(Foo::new).collect();
+        let b: Vec<_> = (51..151).collect();
+        let f = |x: &Foo| x.a;
+        let g = |x: &i32| *x;
+
+        bench.iter(|| {
+            let op = DifferenceByKey { a: &a, b: &b, f, g };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            test::black_box(|| res);
+        });
+    }
+
+    #[bench]
+    fn two_slices_big3(bench: &mut Bencher) {
+        let a: Vec<_> = (0..100).map(Foo::new).collect();
+        let b: Vec<_> = (100..200).collect();
+        let f = |x: &Foo| x.a;
+        let g = |x: &i32| *x;
+
+        bench.iter(|| {
+            let op = DifferenceByKey { a: &a, b: &b, f, g };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            test::black_box(|| res);
+        });
     }
 }

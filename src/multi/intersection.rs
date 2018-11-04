@@ -1,6 +1,6 @@
 use std::cmp;
 use set::{Set, vec_sets_into_slices};
-use ::{SetOperation, exponential_search_offset_ge};
+use ::{SetOperation, exponential_offset_ge};
 
 use self::Equality::*;
 
@@ -76,7 +76,7 @@ impl<'a, T: Ord> Intersection<'a, T> {
                 },
                 NotEqual(x) => {
                     for slice in &mut self.slices {
-                        *slice = exponential_search_offset_ge(slice, x);
+                        *slice = exponential_offset_ge(slice, x);
                         if slice.is_empty() { return }
                     }
                 }

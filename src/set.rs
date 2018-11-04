@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::borrow::Borrow;
 use std::ops::{Deref, RangeBounds, Bound};
 use std::{error, fmt, mem};
-use ::exponential_search;
+use ::{exponential_search, exponential_search_by, exponential_search_by_key};
 
 /// Represent a slice which contains types that are sorted and deduplicated (akin to [`str`]).
 ///
@@ -89,11 +89,11 @@ impl<T> Set<T> {
           T: Borrow<K>,
     {
         let left = match range.start_bound() {
-            Bound::Included(x) => match self.exponential_search(x) {
+            Bound::Included(x) => match self.exponential_search_by(|e| e.borrow().cmp(x)) {
                 Ok(index) => index,
                 Err(index) => index,
             },
-            Bound::Excluded(x) => match self.exponential_search(x) {
+            Bound::Excluded(x) => match self.exponential_search_by(|e| e.borrow().cmp(x)) {
                 Ok(index) => index + 1,
                 Err(index) => index,
             },
@@ -101,11 +101,11 @@ impl<T> Set<T> {
         };
 
         let right = match range.end_bound() {
-            Bound::Included(x) => match self.exponential_search(x) {
+            Bound::Included(x) => match self.exponential_search_by(|e| e.borrow().cmp(x)) {
                 Ok(index) => index + 1,
                 Err(index) => index,
             },
-            Bound::Excluded(x) => match self.exponential_search(x) {
+            Bound::Excluded(x) => match self.exponential_search_by(|e| e.borrow().cmp(x)) {
                 Ok(index) => index,
                 Err(index) => index,
             },
@@ -118,16 +118,50 @@ impl<T> Set<T> {
     /// Exponential searches this sorted slice for a given element.
     ///
     /// If the value is found then `Ok` is returned, containing the index of the matching element;
-    /// if the value is not found then `Err` is returned, containing the index where a matching element
-    /// could be inserted while maintaining sorted order.
+    /// if the value is not found then `Err` is returned, containing the index where a
+    /// matching element could be inserted while maintaining sorted order.
     ///
     /// See the [`exponential_search`] documentation for more details.
     #[inline]
-    pub fn exponential_search<K>(&self, elem: &K) -> Result<usize, usize>
-    where K: Ord + ?Sized,
-          T: Borrow<K>,
+    pub fn exponential_search(&self, elem: &T) -> Result<usize, usize>
+    where T: Ord,
     {
         exponential_search(self, elem)
+    }
+
+    /// Binary searches this sorted slice with a comparator function.
+    ///
+    /// The comparator function should implement an order consistent with the sort order of
+    /// the underlying slice, returning an order code that indicates whether its argument
+    /// is `Less`, `Equal` or `Greater` the desired target.
+    ///
+    /// If the value is found then `Ok` is returned, containing the index of the matching element;
+    /// if the value is not found then `Err` is returned, containing the index where a
+    /// matching element could be inserted while maintaining sorted order.
+    ///
+    /// See the [`exponential_search_by`] documentation for more details.
+    #[inline]
+    pub fn exponential_search_by<F>(&self, f: F) -> Result<usize, usize>
+    where F: FnMut(&T) -> Ordering,
+    {
+        exponential_search_by(self, f)
+    }
+
+    /// Binary searches this sorted slice with a key extraction function.
+    ///
+    /// Assumes that the slice is sorted by the key.
+    ///
+    /// If the value is found then `Ok` is returned, containing the index of the matching element;
+    /// if the value is not found then `Err` is returned, containing the index where a
+    /// matching element could be inserted while maintaining sorted order.
+    ///
+    /// See the [`exponential_search_by`] documentation for more details.
+    #[inline]
+    pub fn exponential_search_by_key<B, F>(&self, b: &B, f: F) -> Result<usize, usize>
+    where F: FnMut(&T) -> B,
+          B: Ord,
+    {
+        exponential_search_by_key(self, b, f)
     }
 
     /// Returns `true` if the set contains an element with the given value.
@@ -147,9 +181,8 @@ impl<T> Set<T> {
     /// # try_main().unwrap();
     /// ```
     #[inline]
-    pub fn contains<K>(&self, x: &K) -> bool
-    where K: Ord + ?Sized,
-          T: Borrow<K>,
+    pub fn contains(&self, x: &T) -> bool
+    where T: Ord,
     {
         self.exponential_search(x).is_ok()
     }

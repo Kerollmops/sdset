@@ -2,10 +2,10 @@
 //!
 //! This library contains two modules containing types to produce set operations:
 //!   - The [`duo`] module is for types limited to be used with two slices not more not less.
-//! The operations are much more performant than `multi`.
 //!   - The [`multi`] module types can be used to do set operations on multiple slices from zero up to an infinite number.
 //!
-//! So prefer using the [`duo`] when you know that you will need set operations for two slices.
+//! The [`duo`] operations are much more performant than [`multi`]
+//! so prefer using [`duo`] when you know that you will need set operations for two slices.
 //!
 //! # Examples
 //!
@@ -60,19 +60,8 @@ pub mod multi;
 pub mod set;
 mod two_minimums;
 
-use std::cmp;
-use std::borrow::Borrow;
+use std::cmp::{self, Ordering};
 pub use set::{Set, SetBuf, Error};
-
-/// Returns the slice but with its start advanced to an element
-/// that is greater or equal to the one given in parameter.
-#[inline]
-fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    match slice.iter().position(|x| x >= elem) {
-        Some(pos) => &slice[pos..],
-        None => &[],
-    }
-}
 
 /// Exponential searches this sorted slice for a given element.
 ///
@@ -98,30 +87,119 @@ fn offset_ge<'a, T: 'a + PartialOrd>(slice: &'a [T], elem: &'a T) -> &'a [T] {
 /// assert!(match r { Ok(1..=4) => true, _ => false, });
 /// ```
 #[inline]
-pub fn exponential_search<K, T>(slice: &[T], elem: &K) -> Result<usize, usize>
-where K: Ord + ?Sized,
-      T: Borrow<K>,
+pub fn exponential_search<T>(slice: &[T], elem: &T) -> Result<usize, usize>
+where T: Ord
+{
+    exponential_search_by(slice, |x| x.cmp(elem))
+}
+
+/// Binary searches this sorted slice with a comparator function.
+///
+/// The comparator function should implement an order consistent with the sort order of
+/// the underlying slice, returning an order code that indicates whether its argument
+/// is `Less`, `Equal` or `Greater` the desired target.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use sdset::exponential_search_by;
+///
+/// let s = &[0, 1, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+///
+/// let seek = 13;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Ok(9));
+/// let seek = 4;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Err(7));
+/// let seek = 100;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Err(13));
+/// let seek = 1;
+/// let r = exponential_search_by(s, |probe| probe.cmp(&seek));
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
+#[inline]
+pub fn exponential_search_by<T, F>(slice: &[T], mut f: F) -> Result<usize, usize>
+where F: FnMut(&T) -> Ordering,
 {
     let mut index = 1;
-    while index < slice.len() && slice[index].borrow() < elem {
+    while index < slice.len() && f(&slice[index]) == Ordering::Less {
         index *= 2;
     }
 
     let half_bound = index / 2;
     let bound = cmp::min(index + 1, slice.len());
 
-    match slice[half_bound..bound].binary_search_by(|x| x.borrow().cmp(elem)) {
+    match slice[half_bound..bound].binary_search_by(f) {
         Ok(pos) => Ok(half_bound + pos),
         Err(pos) => Err(half_bound + pos),
     }
 }
 
+/// Binary searches this sorted slice with a key extraction function.
+///
+/// Assumes that the slice is sorted by the key.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use sdset::exponential_search_by_key;
+///
+/// let s = &[(0, 0), (2, 1), (4, 1), (5, 1), (3, 1),
+///           (1, 2), (2, 3), (4, 5), (5, 8), (3, 13),
+///           (1, 21), (2, 34), (4, 55)];
+///
+/// assert_eq!(exponential_search_by_key(s, &13, |&(a,b)| b),  Ok(9));
+/// assert_eq!(exponential_search_by_key(s, &4, |&(a,b)| b),   Err(7));
+/// assert_eq!(exponential_search_by_key(s, &100, |&(a,b)| b), Err(13));
+/// let r = exponential_search_by_key(s, &1, |&(a,b)| b);
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
 #[inline]
-fn exponential_search_offset_ge<'a, T: 'a + Ord>(slice: &'a [T], elem: &'a T) -> &'a [T] {
-    match exponential_search(slice, elem) {
+pub fn exponential_search_by_key<T, B, F>(slice: &[T], b: &B, mut f: F) -> Result<usize, usize>
+where F: FnMut(&T) -> B,
+      B: Ord
+{
+    exponential_search_by(slice, |k| f(k).cmp(b))
+}
+
+#[inline]
+fn exponential_offset_ge<'a, T>(slice: &'a [T], elem: &T) -> &'a [T]
+where T: Ord,
+{
+    exponential_offset_ge_by(slice, |x| x.cmp(elem))
+}
+
+#[inline]
+fn exponential_offset_ge_by<T, F>(slice: &[T], f: F) -> &[T]
+where F: FnMut(&T) -> Ordering,
+{
+    match exponential_search_by(slice, f) {
         Ok(pos) => &slice[pos..],
         Err(pos) => &slice[pos..],
     }
+}
+
+#[inline]
+fn exponential_offset_ge_by_key<'a, T, B, F>(slice: &'a [T], b: &B, mut f: F) -> &'a [T]
+where F: FnMut(&T) -> B,
+      B: Ord,
+{
+    exponential_offset_ge_by(slice, |x| f(x).cmp(b))
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
