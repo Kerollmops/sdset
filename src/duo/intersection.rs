@@ -1,6 +1,6 @@
 use std::cmp;
-use set::Set;
-use ::{SetOperation, exponential_offset_ge};
+use crate::set::Set;
+use crate::{SetOperation, exponential_offset_ge};
 
 /// Represent the _intersection_ set operation that will be applied to two slices.
 ///
@@ -77,7 +77,7 @@ impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[test]
     fn two_slices() {
@@ -116,7 +116,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {

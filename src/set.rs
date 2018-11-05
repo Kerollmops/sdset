@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::borrow::Borrow;
 use std::ops::{Deref, RangeBounds, Bound};
 use std::{error, fmt, mem};
-use ::{exponential_search, exponential_search_by, exponential_search_by_key};
+use crate::{exponential_search, exponential_search_by, exponential_search_by_key};
 
 /// Represent a slice which contains types that are sorted and deduplicated (akin to [`str`]).
 ///

@@ -1,6 +1,6 @@
 use std::cmp;
-use set::{Set, vec_sets_into_slices};
-use ::{SetOperation, exponential_offset_ge};
+use crate::set::{Set, vec_sets_into_slices};
+use crate::{SetOperation, exponential_offset_ge};
 
 use self::Equality::*;
 
@@ -100,7 +100,7 @@ impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[test]
     fn no_slice() {
@@ -182,7 +182,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {

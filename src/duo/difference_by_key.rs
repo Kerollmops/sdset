@@ -1,5 +1,5 @@
-use set::Set;
-use {exponential_offset_ge_by_key, SetOperation};
+use crate::set::Set;
+use crate::{exponential_offset_ge_by_key, SetOperation};
 
 /// Represent the _difference_ set operation that will be applied to two slices of different types.
 ///
@@ -119,7 +119,7 @@ where F: Fn(&T) -> K,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct Foo {
@@ -210,7 +210,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[derive(Debug, Clone)]
     pub struct Foo {

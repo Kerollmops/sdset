@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
-use set::Set;
-use ::SetOperation;
+use crate::set::Set;
+use crate::SetOperation;
 
 /// Represent the _symmetric difference_ set operation that will be applied to two slices.
 ///
@@ -92,7 +92,7 @@ impl<'a, T: Ord> SetOperation<&'a T> for SymmetricDifference<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     quickcheck! {
         fn qc_symmetric_difference(a: Vec<i32>, b: Vec<i32>) -> bool {
@@ -122,7 +122,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {

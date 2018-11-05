@@ -61,7 +61,7 @@ pub mod set;
 mod two_minimums;
 
 use std::cmp::{self, Ordering};
-pub use set::{Set, SetBuf, Error};
+pub use crate::set::{Set, SetBuf, Error};
 
 /// Exponential searches this sorted slice for a given element.
 ///

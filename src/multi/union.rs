@@ -1,6 +1,6 @@
-use set::{Set, vec_sets_into_slices};
-use two_minimums::{two_minimums, Minimums::*};
-use ::SetOperation;
+use crate::set::{Set, vec_sets_into_slices};
+use crate::two_minimums::{two_minimums, Minimums::*};
+use crate::SetOperation;
 
 /// Represent the _union_ set operation that will be applied to the slices.
 ///
@@ -88,7 +88,7 @@ impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[test]
     fn no_slice() {
@@ -183,7 +183,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {

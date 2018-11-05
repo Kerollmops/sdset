@@ -1,6 +1,6 @@
 use std::cmp;
-use set::{Set, vec_sets_into_slices};
-use {SetOperation, exponential_offset_ge_by_key};
+use crate::set::{Set, vec_sets_into_slices};
+use crate::{SetOperation, exponential_offset_ge_by_key};
 
 /// Represent the _difference_ set operation that will be applied to multiple slices
 /// of two different types.
@@ -136,7 +136,7 @@ where F: Fn(&T) -> K,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
     struct Foo {
@@ -236,7 +236,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
     struct Foo {

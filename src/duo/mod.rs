@@ -18,7 +18,7 @@
 //! # try_main().unwrap();
 //! ```
 
-use set::Set;
+use crate::set::Set;
 
 mod union;
 mod difference;

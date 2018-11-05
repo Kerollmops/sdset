@@ -1,5 +1,5 @@
-use set::Set;
-use ::{exponential_offset_ge, SetOperation};
+use crate::set::Set;
+use crate::{exponential_offset_ge, SetOperation};
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -77,7 +77,7 @@ impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use set::{sort_dedup_vec, SetBuf};
+    use crate::set::{sort_dedup_vec, SetBuf};
 
     #[test]
     fn two_slices() {
@@ -125,7 +125,7 @@ mod bench {
     extern crate test;
     use super::*;
     use self::test::Bencher;
-    use set::SetBuf;
+    use crate::set::SetBuf;
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
