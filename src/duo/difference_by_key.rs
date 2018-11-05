@@ -123,7 +123,7 @@ mod tests {
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct Foo {
-        a: u32,
+        a: i32,
         b: i8,
     }
 

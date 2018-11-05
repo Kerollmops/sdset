@@ -24,11 +24,13 @@ use set::Set;
 mod union;
 mod intersection;
 mod difference;
+mod difference_by_key;
 mod symmetric_difference;
 
 pub use self::union::Union;
 pub use self::intersection::Intersection;
 pub use self::difference::Difference;
+pub use self::difference_by_key::DifferenceByKey;
 pub use self::symmetric_difference::SymmetricDifference;
 
 /// Type used to acquire any number of slices
@@ -92,5 +94,57 @@ impl<'a, T> OpBuilder<'a, T> {
     /// Prepare the slices for the _symmetric difference_ set operation.
     pub fn symmetric_difference(self) -> SymmetricDifference<'a, T> {
         SymmetricDifference::new(self.slices)
+    }
+}
+
+/// Type used to make a set operation on two slices of different types.
+///
+/// The two functions are used to generate a key that will be used to
+/// make the set operation and correlate the two slices values.
+#[derive(Clone)]
+pub struct OpBuilderByKey<'a, T: 'a, U: 'a, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    base: &'a Set<T>,
+    others: Vec<&'a Set<U>>,
+    f: F,
+    g: G,
+}
+
+impl<'a, T, U, F, G, K> OpBuilderByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    /// Construct a type with two slices.
+    pub fn new(base: &'a Set<T>, f: F, g: G) -> Self {
+        Self { base, others: Vec::new(), f, g }
+    }
+
+    /// Construct it with the content of the given slice.
+    ///
+    /// Note that no other allocation than the one of the vec given
+    /// in parameter is needed for the construction.
+    pub fn from_vec(base: &'a Set<T>, others: Vec<&'a Set<U>>, f: F, g: G) -> Self {
+        Self { base, others, f, g }
+    }
+
+    /// Push a new set that will be used for the future set operation.
+    pub fn push(&mut self, set: &'a Set<U>) {
+        self.others.push(set);
+    }
+
+    /// Add a new set that will be used for the future set operation
+    /// and consume and return the type.
+    pub fn add(mut self, set: &'a Set<U>) -> Self {
+        self.push(set);
+        self
+    }
+
+    /// Prepare the two slices for the _difference_ set operation.
+    pub fn difference(self) -> DifferenceByKey<'a, T, U, F, G, K> {
+        DifferenceByKey::new(self.base, self.others, self.f, self.g)
     }
 }

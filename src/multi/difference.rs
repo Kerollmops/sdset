@@ -50,7 +50,6 @@ impl<'a, T: Ord> Difference<'a, T> {
         };
 
         while let Some(first) = base.first() {
-
             let mut minimum = None;
             for slice in others.iter_mut() {
                 *slice = exponential_offset_ge(slice, first);
