@@ -52,6 +52,9 @@
 
 #![cfg_attr(feature = "unstable", feature(test))]
 
+#[cfg(feature="serde")]
+extern crate serde;
+
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
