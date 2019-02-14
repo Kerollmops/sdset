@@ -4,6 +4,10 @@ use std::cmp::Ordering;
 use std::borrow::Borrow;
 use std::ops::{Deref, RangeBounds, Bound};
 use std::{error, fmt, mem};
+
+#[cfg(feature="serde")]
+use serde::{Serialize, Deserialize};
+
 use crate::{exponential_search, exponential_search_by, exponential_search_by_key};
 
 /// Represent a slice which contains types that are sorted and deduplicated (akin to [`str`]).
@@ -11,6 +15,7 @@ use crate::{exponential_search, exponential_search_by, exponential_search_by_key
 /// This is an *unsized* type, meaning that it must always be used behind a
 /// pointer like `&` or [`Box`]. For an owned version of this type,
 /// see [`SetBuf`].
+#[cfg_attr(feature="serde", derive(Serialize))]
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Set<T>([T]);
@@ -245,6 +250,7 @@ impl<T> AsRef<Set<T>> for Set<T> {
 }
 
 /// An owned, set (akin to [`String`]).
+#[cfg_attr(feature="serde", derive(Serialize))]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SetBuf<T>(Vec<T>);
 
@@ -350,6 +356,36 @@ impl<T> AsRef<[T]> for SetBuf<T> {
     }
 }
 
+#[cfg(feature="serde")]
+use serde::de::{Deserializer, Error as SerdeError};
+
+#[cfg(feature="serde")]
+impl<'de, T> Deserialize<'de> for SetBuf<T>
+where
+    T: Deserialize<'de> + Ord,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let vec = Vec::deserialize(deserializer)?;
+
+        match SetBuf::new(vec) {
+            Ok(set) => Ok(set),
+            Err(e) => Err(D::Error::custom(e)),
+        }
+    }
+
+    fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Vec::deserialize_in_place(deserializer, &mut place.0)?;
+
+        is_sort_dedup(&place.0).map_err(D::Error::custom)
+    }
+}
+
 /// Represent the possible errors when creating a [`Set`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Error {
@@ -362,8 +398,8 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         let desc = match self {
-            Error::NotSort => "the given slice is not sorted.",
-            Error::NotDedup => "the given slice is not deduplicated.",
+            Error::NotSort => "elements are not sorted.",
+            Error::NotDedup => "elements contain duplicates.",
         };
         f.write_str(desc)
     }
