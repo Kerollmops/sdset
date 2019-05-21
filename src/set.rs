@@ -306,6 +306,28 @@ impl<T> SetBuf<T> {
         is_sort_dedup(&vec).map(|_| SetBuf::new_unchecked(vec))
     }
 
+    /// Construct a [`SetBuf`] from an unsorted and/or
+    /// non-deduplicated `Vec<T>`.
+    ///
+    /// ```
+    /// use sdset::SetBuf;
+    ///
+    /// let set = SetBuf::from_dirty(vec![1, 4, 2, 6, 4]);
+    /// let mut iterator = set.into_iter();
+    ///
+    /// assert_eq!(iterator.next(), Some(1));
+    /// assert_eq!(iterator.next(), Some(2));
+    /// assert_eq!(iterator.next(), Some(4));
+    /// assert_eq!(iterator.next(), Some(6));
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    pub fn from_dirty(mut vec: Vec<T>) -> Self
+    where T: Ord,
+    {
+        sort_dedup_vec(&mut vec);
+        SetBuf(vec)
+    }
+
     /// Construct a [`SetBuf`] without checking it.
     ///
     /// ```
