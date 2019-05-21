@@ -227,6 +227,24 @@ impl<T> Set<T> {
     pub fn as_slice(&self) -> &[T] {
         &self.0
     }
+
+    /// Returns an iterator over this ordered set.
+    ///
+    /// ```
+    /// use sdset::Set;
+    ///
+    /// let x = Set::new_unchecked(&[1, 2, 4]);
+    /// let mut iterator = x.iter();
+    ///
+    /// assert_eq!(iterator.next(), Some(&1));
+    /// assert_eq!(iterator.next(), Some(&2));
+    /// assert_eq!(iterator.next(), Some(&4));
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    #[inline]
+    pub fn iter(&self) -> std::slice::Iter<T> {
+        self.0.iter()
+    }
 }
 
 impl<T> Deref for Set<T> {
@@ -246,6 +264,15 @@ impl<T> AsRef<[T]> for Set<T> {
 impl<T> AsRef<Set<T>> for Set<T> {
     fn as_ref(&self) -> &Set<T> {
         self
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Set<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
@@ -334,6 +361,24 @@ impl<T> SetBuf<T> {
     pub fn into_vec(self) -> Vec<T> {
         self.0
     }
+
+    /// Returns an iterator over this ordered set.
+    ///
+    /// ```
+    /// use sdset::SetBuf;
+    ///
+    /// let x = SetBuf::new_unchecked(vec![1, 2, 4]);
+    /// let mut iterator = x.iter();
+    ///
+    /// assert_eq!(iterator.next(), Some(&1));
+    /// assert_eq!(iterator.next(), Some(&2));
+    /// assert_eq!(iterator.next(), Some(&4));
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    #[inline]
+    pub fn iter(&self) -> std::slice::Iter<T> {
+        self.0.iter()
+    }
 }
 
 impl<T> Deref for SetBuf<T> {
@@ -353,6 +398,15 @@ impl<T> AsRef<Set<T>> for SetBuf<T> {
 impl<T> AsRef<[T]> for SetBuf<T> {
     fn as_ref(&self) -> &[T] {
         self.0.as_slice()
+    }
+}
+
+impl<T> IntoIterator for SetBuf<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
