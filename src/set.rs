@@ -247,6 +247,14 @@ impl<T> Set<T> {
     }
 }
 
+impl<T: Clone> ToOwned for Set<T> {
+    type Owned = SetBuf<T>;
+
+    fn to_owned(&self) -> Self::Owned {
+        SetBuf(self.0.to_owned())
+    }
+}
+
 impl<T> Deref for Set<T> {
     type Target = [T];
 
@@ -400,6 +408,12 @@ impl<T> SetBuf<T> {
     #[inline]
     pub fn iter(&self) -> std::slice::Iter<T> {
         self.0.iter()
+    }
+}
+
+impl<T> Borrow<Set<T>> for SetBuf<T> {
+    fn borrow(&self) -> &Set<T> {
+        self.as_set()
     }
 }
 
@@ -598,5 +612,17 @@ mod tests {
 
         let subset = set.range((Unbounded, Excluded(10)));
         assert_eq!(subset.as_slice(), &[1, 2, 4, 6, 7]);
+    }
+
+    #[test]
+    fn cow_set_setbuf() {
+        use std::borrow::Cow;
+
+        let set = Set::new(&[1, 2, 4, 6, 7]).unwrap();
+
+        let borrowed_cow = Cow::Borrowed(set);
+        let owned_cow = borrowed_cow.to_owned();
+
+        assert_eq!(&*owned_cow, set);
     }
 }
