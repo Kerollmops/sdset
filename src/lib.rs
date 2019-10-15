@@ -55,6 +55,9 @@
 #[cfg(feature="serde")]
 extern crate serde;
 
+#[cfg(feature="zerocopy")]
+extern crate zerocopy;
+
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
