@@ -284,21 +284,6 @@ impl<'a, T> IntoIterator for &'a Set<T> {
     }
 }
 
-#[cfg(feature="zerocopy")]
-unsafe impl<T: zerocopy::AsBytes> zerocopy::AsBytes for Set<T> {
-    fn only_derive_is_allowed_to_implement_this_trait() where Self: Sized { }
-}
-
-#[cfg(feature="zerocopy")]
-unsafe impl<T: zerocopy::FromBytes> zerocopy::FromBytes for Set<T> {
-    fn only_derive_is_allowed_to_implement_this_trait() where Self: Sized { }
-}
-
-#[cfg(feature="zerocopy")]
-unsafe impl<T: zerocopy::Unaligned> zerocopy::Unaligned for Set<T> {
-    fn only_derive_is_allowed_to_implement_this_trait() where Self: Sized { }
-}
-
 /// An owned, set (akin to [`String`]).
 #[cfg_attr(feature="serde", derive(Serialize))]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

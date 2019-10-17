@@ -13,9 +13,10 @@ readme = "README.md"
 keywords = ["set", "operation", "slice", "sort", "dedup"]
 categories = ["algorithms"]
 
-[dependencies]
-serde = { version = "1.0", features = ["derive"], optional = true }
-zerocopy = { version = "0.2.8", optional = true }
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
 
 [dev-dependencies]
 quickcheck = "0.6"
