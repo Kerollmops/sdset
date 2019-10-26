@@ -82,7 +82,7 @@ fn main() {
 
     let mut tests = HashMap::new();
     for line in file.lines() {
-        let mut line = line.unwrap();
+        let line = line.unwrap();
 
         if let Ok(mut bench) = Benchmark::from_str(&line) {
             bench.name = bench.name.replace("bench::", "");
@@ -161,9 +161,9 @@ fn main() {
 
         for row in array {
             for (i, tile) in row.iter().enumerate() {
-                write!(&mut file, "{1:0$} ", aligns[i] + 3, tile);
+                write!(&mut file, "{1:0$} ", aligns[i] + 3, tile).unwrap();
             }
-            writeln!(&mut file);
+            writeln!(&mut file).unwrap();
         }
     }
 }

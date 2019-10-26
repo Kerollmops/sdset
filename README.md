@@ -45,7 +45,7 @@ Histograms can be generated using the benchmarks by executing the following comm
 
 ```bash
 $ export CARGO_BENCH_CMD='cargo bench --features unstable'
-$ ./gen_graphs.sh
+$ ./gen_graphs.sh xxx.bench
 ```
 
 This is much more easier to read statistics and to see how `sdset` is more performant on already sorted and deduplicated slices than any other kind of collection.
