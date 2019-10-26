@@ -12,6 +12,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["set", "operation", "slice", "sort", "dedup"]
 categories = ["algorithms"]
+edition = "2018"
 
 [dependencies.serde]
 version = "1.0"
