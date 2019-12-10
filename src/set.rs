@@ -255,6 +255,12 @@ impl<T: Clone> ToOwned for Set<T> {
     }
 }
 
+impl<T> Default for &Set<T> {
+    fn default() -> Self {
+        Set::new_unchecked(&[])
+    }
+}
+
 impl<T> Deref for Set<T> {
     type Target = [T];
 
@@ -286,7 +292,7 @@ impl<'a, T> IntoIterator for &'a Set<T> {
 
 /// An owned, set (akin to [`String`]).
 #[cfg_attr(feature="serde", derive(Serialize))]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SetBuf<T>(Vec<T>);
 
 impl<T> SetBuf<T> {
