@@ -292,7 +292,7 @@ impl<'a, T> IntoIterator for &'a Set<T> {
 
 /// An owned, set (akin to [`String`]).
 #[cfg_attr(feature="serde", derive(Serialize))]
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SetBuf<T>(Vec<T>);
 
 impl<T> SetBuf<T> {
@@ -420,6 +420,12 @@ impl<T> SetBuf<T> {
 impl<T> Borrow<Set<T>> for SetBuf<T> {
     fn borrow(&self) -> &Set<T> {
         self.as_set()
+    }
+}
+
+impl<T> Default for SetBuf<T> {
+    fn default() -> Self {
+        SetBuf::new_unchecked(Vec::new())
     }
 }
 
