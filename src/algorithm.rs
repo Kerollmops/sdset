@@ -34,6 +34,10 @@ pub trait Algorithm {
             Err(pos) => &slice[pos..],
         }
     }
+
+    fn contains<T: Ord>(slice: &[T], elem: &T) -> bool {
+        Self::search(slice, elem).is_ok()
+    }
 }
 
 pub enum Linear {}
