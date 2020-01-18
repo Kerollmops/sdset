@@ -58,13 +58,15 @@ extern crate serde;
 #[cfg(test)]
 #[macro_use] extern crate quickcheck;
 
+mod algorithm;
+mod two_minimums;
 pub mod duo;
 pub mod multi;
 pub mod set;
-mod two_minimums;
 
-use std::cmp::{self, Ordering};
+use std::cmp::Ordering;
 pub use crate::set::{Set, SetBuf, Error};
+pub use crate::algorithm::{Algorithm, Linear, Binary, Exponential};
 
 /// Exponential searches this sorted slice for a given element.
 ///
@@ -93,7 +95,7 @@ pub use crate::set::{Set, SetBuf, Error};
 pub fn exponential_search<T>(slice: &[T], elem: &T) -> Result<usize, usize>
 where T: Ord
 {
-    exponential_search_by(slice, |x| x.cmp(elem))
+    Exponential::search_by(slice, |x| x.cmp(elem))
 }
 
 /// Binary searches this sorted slice with a comparator function.
@@ -128,21 +130,10 @@ where T: Ord
 /// assert!(match r { Ok(1..=4) => true, _ => false, });
 /// ```
 #[inline]
-pub fn exponential_search_by<T, F>(slice: &[T], mut f: F) -> Result<usize, usize>
+pub fn exponential_search_by<T, F>(slice: &[T], f: F) -> Result<usize, usize>
 where F: FnMut(&T) -> Ordering,
 {
-    let mut index = 1;
-    while index < slice.len() && f(&slice[index]) == Ordering::Less {
-        index *= 2;
-    }
-
-    let half_bound = index / 2;
-    let bound = cmp::min(index + 1, slice.len());
-
-    match slice[half_bound..bound].binary_search_by(f) {
-        Ok(pos) => Ok(half_bound + pos),
-        Err(pos) => Err(half_bound + pos),
-    }
+    Exponential::search_by(slice, f)
 }
 
 /// Binary searches this sorted slice with a key extraction function.
@@ -173,36 +164,26 @@ where F: FnMut(&T) -> Ordering,
 /// assert!(match r { Ok(1..=4) => true, _ => false, });
 /// ```
 #[inline]
-pub fn exponential_search_by_key<T, B, F>(slice: &[T], b: &B, mut f: F) -> Result<usize, usize>
+pub fn exponential_search_by_key<T, B, F>(slice: &[T], b: &B, f: F) -> Result<usize, usize>
 where F: FnMut(&T) -> B,
       B: Ord
 {
-    exponential_search_by(slice, |k| f(k).cmp(b))
+    Exponential::search_by_key(slice, b, f)
 }
 
 #[inline]
 fn exponential_offset_ge<'a, T>(slice: &'a [T], elem: &T) -> &'a [T]
 where T: Ord,
 {
-    exponential_offset_ge_by(slice, |x| x.cmp(elem))
+    Exponential::offset_ge_by(slice, |x| x.cmp(elem))
 }
 
 #[inline]
-fn exponential_offset_ge_by<T, F>(slice: &[T], f: F) -> &[T]
-where F: FnMut(&T) -> Ordering,
-{
-    match exponential_search_by(slice, f) {
-        Ok(pos) => &slice[pos..],
-        Err(pos) => &slice[pos..],
-    }
-}
-
-#[inline]
-fn exponential_offset_ge_by_key<'a, T, B, F>(slice: &'a [T], b: &B, mut f: F) -> &'a [T]
+fn exponential_offset_ge_by_key<'a, T, B, F>(slice: &'a [T], b: &B, f: F) -> &'a [T]
 where F: FnMut(&T) -> B,
       B: Ord,
 {
-    exponential_offset_ge_by(slice, |x| f(x).cmp(b))
+    Exponential::offset_ge_by_key(slice, b, f)
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
