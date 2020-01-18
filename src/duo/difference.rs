@@ -1,5 +1,7 @@
-use crate::set::Set;
-use crate::{exponential_offset_ge, SetOperation};
+use std::marker;
+
+use crate::algorithm::{Algorithm, Exponential};
+use crate::{SetOperation, Set};
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -21,34 +23,39 @@ use crate::{exponential_offset_ge, SetOperation};
 /// # try_main().unwrap();
 /// ```
 #[derive(Copy, Clone)]
-pub struct Difference<'a, T: 'a> {
+pub struct Difference<'a, T: 'a, A: Algorithm = Exponential> {
     a: &'a [T],
     b: &'a [T],
+    _algo: marker::PhantomData<A>,
 }
 
-impl<'a, T> Difference<'a, T> {
+impl<'a, T, A: Algorithm> Difference<'a, T, A> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: &'a Set<T>, b: &'a Set<T>) -> Self {
         Self {
             a: a.as_slice(),
             b: b.as_slice(),
+            _algo: marker::PhantomData,
         }
     }
 }
 
-impl<'a, T: Ord> Difference<'a, T> {
+impl<'a, T: Ord, A: Algorithm> Difference<'a, T, A> {
     #[inline]
     fn extend_vec<U, F>(mut self, output: &mut Vec<U>, extend: F)
     where F: Fn(&mut Vec<U>, &'a [T])
     {
         while let Some(first) = self.a.first() {
-            self.b = exponential_offset_ge(self.b, first);
+            self.b = A::offset_ge(self.b, first);
             let minimum = self.b.first();
 
             match minimum {
-                Some(min) if min == first => self.a = exponential_offset_ge(&self.a[1..], min),
+                Some(min) if min == first => self.a = A::offset_ge(&self.a[1..], min),
                 Some(min) => {
-                    let off = self.a.iter().take_while(|&x| x < min).count();
+                    let off = match A::search(self.a, min) {
+                        Ok(off) => off,
+                        Err(off) => off,
+                    };
                     extend(output, &self.a[..off]);
 
                     self.a = &self.a[off..];
@@ -77,23 +84,23 @@ impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    use crate::set::SetBuf;
 
     #[test]
     fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 4];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[2, 4]);
 
-        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
+        let union_: SetBuf<i32> = Difference::new(a, b).into_set_buf();
         assert_eq!(&union_[..], &[1, 3]);
     }
 
     #[test]
     fn two_slices_special_case() {
-        let a = &[1, 2, 3];
-        let b = &[3];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[3]);
 
-        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
+        let union_: SetBuf<i32> = Difference::new(a, b).into_set_buf();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
@@ -102,13 +109,10 @@ mod tests {
             use std::collections::BTreeSet;
             use std::iter::FromIterator;
 
-            let mut a = a;
-            let mut b = b;
+            let a = SetBuf::from_dirty(a);
+            let b = SetBuf::from_dirty(b);
 
-            sort_dedup_vec(&mut a);
-            sort_dedup_vec(&mut b);
-
-            let x: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
+            let x: SetBuf<i32> = Difference::new(&a, &b).into_set_buf();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);
@@ -129,33 +133,33 @@ mod bench {
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
+        let a = SetBuf::new((0..100).collect()).unwrap();
+        let b = SetBuf::new((1..101).collect()).unwrap();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(&a, &b).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
+        let a = SetBuf::new((0..100).collect()).unwrap();
+        let b = SetBuf::new((51..151).collect()).unwrap();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(&a, &b).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
+        let a = SetBuf::new((0..100).collect()).unwrap();
+        let b = SetBuf::new((100..200).collect()).unwrap();
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(&a, &b).into_set_buf();
             test::black_box(|| difference_);
         });
     }
