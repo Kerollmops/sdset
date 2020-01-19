@@ -54,7 +54,7 @@ impl Algorithm for Linear {
             }
         }
 
-        return Err(slice.len())
+        Err(slice.len())
     }
 }
 

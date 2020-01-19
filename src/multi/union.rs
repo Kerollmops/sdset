@@ -42,8 +42,8 @@ impl<'a, T: Ord> Union<'a, T> {
     where F: Fn(&mut Vec<U>, &'a [T]),
           G: Fn(&mut Vec<U>, &'a T),
     {
-        if let Some(slice) = self.slices.first() {
-            output.reserve(slice.len());
+        if let Some(len) = self.slices.iter().map(|s| s.len()).max() {
+            output.reserve(len);
         }
 
         loop {
