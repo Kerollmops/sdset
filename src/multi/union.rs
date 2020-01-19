@@ -1,6 +1,9 @@
+use std::marker;
+
+use crate::SetOperation;
+use crate::algorithm::{Algorithm, Exponential};
 use crate::set::{Set, vec_sets_into_slices};
 use crate::two_minimums::{two_minimums, Minimums::*};
-use crate::SetOperation;
 
 /// Represent the _union_ set operation that will be applied to the slices.
 ///
@@ -23,20 +26,22 @@ use crate::SetOperation;
 /// # try_main().unwrap();
 /// ```
 #[derive(Clone)]
-pub struct Union<'a, T: 'a> {
+pub struct Union<'a, T: 'a, A: Algorithm = Exponential> {
     slices: Vec<&'a [T]>,
+    _algo: marker::PhantomData<A>,
 }
 
-impl<'a, T> Union<'a, T> {
+impl<'a, T, A: Algorithm> Union<'a, T, A> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<&'a Set<T>>) -> Self {
         Self {
             slices: vec_sets_into_slices(slices),
+            _algo: marker::PhantomData,
         }
     }
 }
 
-impl<'a, T: Ord> Union<'a, T> {
+impl<'a, T: Ord, A: Algorithm> Union<'a, T, A> {
     #[inline]
     fn extend_vec<U, F, G>(mut self, output: &mut Vec<U>, extend: F, push: G)
     where F: Fn(&mut Vec<U>, &'a [T]),
@@ -50,7 +55,11 @@ impl<'a, T: Ord> Union<'a, T> {
             match two_minimums(&self.slices) {
                 Two((i, f), (_, s)) => {
                     if f != s {
-                        let off = self.slices[i].iter().take_while(|&e| e < s).count();
+                        let off = match A::search(self.slices[i], s) {
+                            Ok(off) => off,
+                            Err(off) => off,
+                        };
+
                         extend(output, &self.slices[i][..off]);
                         self.slices[i] = &self.slices[i][off..];
                     }
@@ -71,8 +80,6 @@ impl<'a, T: Ord> Union<'a, T> {
     }
 }
 
-
-
 impl<'a, T: Ord + Clone> SetOperation<T> for Union<'a, T> {
     fn extend_vec(self, output: &mut Vec<T>) {
         self.extend_vec(output, Vec::extend_from_slice, |v, x| v.push(x.clone()));
@@ -88,64 +95,64 @@ impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    use crate::set::SetBuf;
 
     #[test]
     fn no_slice() {
-        let union_: SetBuf<i32> = Union { slices: vec![] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![]).into_set_buf();
         assert_eq!(&union_[..], &[]);
     }
 
     #[test]
     fn one_empty_slice() {
-        let a: &[i32] = &[];
+        let a: &Set<i32> = Set::new_unchecked(&[]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a]).into_set_buf();
         assert_eq!(&union_[..], &[]);
     }
 
     #[test]
     fn one_slice() {
-        let a = &[1, 2, 3];
+        let a = Set::new_unchecked(&[1, 2, 3]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
     #[test]
     fn two_slices_equal() {
-        let a = &[1, 2, 3];
-        let b = &[1, 2, 3];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[1, 2, 3]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3]);
     }
 
     #[test]
     fn two_slices_little() {
-        let a = &[1];
-        let b = &[2];
+        let a = Set::new_unchecked(&[1]);
+        let b = Set::new_unchecked(&[2]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2]);
     }
 
     #[test]
     fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[2, 3, 4]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a, b]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3, 4]);
     }
 
     #[test]
     fn three_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[2, 3, 4]);
+        let c = Set::new_unchecked(&[3, 4, 5]);
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b, c] }.into_set_buf();
+        let union_: SetBuf<i32> = Union::new(vec![a, b, c]).into_set_buf();
         assert_eq!(&union_[..], &[1, 2, 3, 4, 5]);
     }
 
@@ -154,16 +161,11 @@ mod tests {
             use std::collections::BTreeSet;
             use std::iter::FromIterator;
 
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
-
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
-            }
+            let xss: Vec<_> = xss.into_iter().map(SetBuf::from_dirty).collect();
 
             let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Union { slices: xss }.into_set_buf()
+                let xss = xss.iter().map(AsRef::as_ref).collect();
+                Union::new(xss).into_set_buf()
             };
 
             let mut y = BTreeSet::new();
@@ -187,69 +189,69 @@ mod bench {
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((1..101).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
 
     #[bench]
     fn two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((51..151).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
 
     #[bench]
     fn two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((100..200).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b]).into_set_buf();
             test::black_box(|| union_);
         });
     }
 
     #[bench]
     fn three_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((1..101).collect());
+        let c = SetBuf::from_dirty((2..102).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }
 
     #[bench]
     fn three_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (66..167).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((34..134).collect());
+        let c = SetBuf::from_dirty((66..167).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }
 
     #[bench]
     fn three_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
+        let a = SetBuf::from_dirty((0..100).collect());
+        let b = SetBuf::from_dirty((100..200).collect());
+        let c = SetBuf::from_dirty((200..300).collect());
 
         bench.iter(|| {
-            let union_: SetBuf<i32> = Union { slices: vec![&a, &b, &c] }.into_set_buf();
+            let union_: SetBuf<i32> = Union::new(vec![&a, &b, &c]).into_set_buf();
             test::black_box(|| union_);
         });
     }
