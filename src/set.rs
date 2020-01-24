@@ -192,6 +192,42 @@ impl<T> Set<T> {
         self.exponential_search(x).is_ok()
     }
 
+    /// Returns `true` if the two sets are disjoint.
+    ///
+    /// This function uses exponential searching internally
+    /// because it is verified that the elements are ordered.
+    ///
+    /// ```
+    /// use sdset::{Set, Error};
+    /// # fn try_main() -> Result<(), Error> {
+    ///
+    /// let seta = Set::new(&[1, 2, 4, 6, 7])?;
+    /// let setb = Set::new(&[2, 3, 4])?;
+    ///
+    /// assert_eq!(seta.is_disjoint(&setb), false);
+    ///
+    /// let setc = Set::new(&[3, 5, 8])?;
+    ///
+    /// assert_eq!(seta.is_disjoint(&setc), true);
+    /// # Ok(()) }
+    /// # try_main().unwrap();
+    /// ```
+    pub fn is_disjoint<O>(&self, other: O) -> bool
+    where T: Ord,
+          O: AsRef<Set<T>>,
+    {
+        let mut slice = self.as_slice();
+
+        for x in other.as_ref() {
+            match exponential_search(slice, x) {
+                Ok(_) => return false,
+                Err(pos) => slice = &slice[pos..],
+            }
+        }
+
+        true
+    }
+
     /// Construct the owning version of the [`Set`].
     ///
     /// ```
