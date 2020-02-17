@@ -205,15 +205,40 @@ where F: FnMut(&T) -> B,
     exponential_offset_ge_by(slice, |x| f(x).cmp(b))
 }
 
+pub trait Collection<T> {
+    fn push(&mut self, elem: T);
+    fn extend_from_slice(&mut self, elems: &[T]) where T: Clone;
+    fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T>;
+    fn reserve(&mut self, size: usize) { }
+}
+
+impl<T> Collection<T> for Vec<T> {
+    fn push(&mut self, elem: T) {
+        Vec::push(self, elem);
+    }
+
+    fn extend_from_slice(&mut self, elems: &[T]) where T: Clone {
+        Vec::extend_from_slice(self, elems);
+    }
+
+    fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T> {
+        Extend::extend(self, elems);
+    }
+
+    fn reserve(&mut self, size: usize) {
+        Vec::reserve(self, size);
+    }
+}
+
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
 pub trait SetOperation<T>: Sized {
-    /// Extend a [`Vec`] with the values of the [`Set`]s using this set operation.
-    fn extend_vec(self, output: &mut Vec<T>);
+    /// Extend a [`Collection`] with the values of the [`Set`]s using this set operation.
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T>;
 
-    /// Create a [`SetBuf`] using the [`SetOperation::extend_vec`] method.
-    fn into_set_buf(self) -> SetBuf<T> {
+    /// Create a [`SetBuf`] using the [`SetOperation::extend_collection`] method.
+    fn into_set_buf(self) -> SetBuf<T> where T: Clone {
         let mut vec = Vec::new();
-        self.extend_vec(&mut vec);
+        self.extend_collection(&mut vec);
         SetBuf::new_unchecked(vec)
     }
 }

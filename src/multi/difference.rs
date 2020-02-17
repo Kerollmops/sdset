@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, exponential_offset_ge};
+use crate::{SetOperation, Collection, exponential_offset_ge};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -41,8 +41,9 @@ impl<'a, T> Difference<'a, T> {
 
 impl<'a, T: Ord> Difference<'a, T> {
     #[inline]
-    fn extend_vec<U, F>(mut self, output: &mut Vec<U>, extend: F)
-    where F: Fn(&mut Vec<U>, &'a [T])
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    where C: Collection<U>,
+          F: Fn(&mut C, &'a [T])
     {
         let (base, others) = match self.slices.split_first_mut() {
             Some(split) => split,
@@ -78,14 +79,14 @@ impl<'a, T: Ord> Difference<'a, T> {
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Difference<'a, T> {
-    fn extend_vec(self, output: &mut Vec<T>) {
-        self.extend_vec(output, Vec::extend_from_slice);
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+        self.extend_collection(output, Collection::extend_from_slice);
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
-    fn extend_vec(self, output: &mut Vec<&'a T>) {
-        self.extend_vec(output, Extend::extend);
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+        self.extend_collection(output, Collection::extend);
     }
 }
 

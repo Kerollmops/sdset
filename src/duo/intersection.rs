@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::Set;
-use crate::{SetOperation, exponential_offset_ge};
+use crate::{exponential_offset_ge, SetOperation, Collection};
 
 /// Represent the _intersection_ set operation that will be applied to two slices.
 ///
@@ -39,8 +39,9 @@ impl<'a, T> Intersection<'a, T> {
 
 impl<'a, T: Ord> Intersection<'a, T> {
     #[inline]
-    fn extend_vec<U, F>(mut self, output: &mut Vec<U>, extend: F)
-    where F: Fn(&mut Vec<U>, &'a [T])
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    where C: Collection<U>,
+          F: Fn(&mut C, &'a [T])
     {
         while !self.a.is_empty() && !self.b.is_empty() {
             let a = &self.a[0];
@@ -63,14 +64,14 @@ impl<'a, T: Ord> Intersection<'a, T> {
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Intersection<'a, T> {
-    fn extend_vec(self, output: &mut Vec<T>) {
-        self.extend_vec(output, Vec::extend_from_slice)
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+        self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
-    fn extend_vec(self, output: &mut Vec<&'a T>) {
-        self.extend_vec(output, Extend::extend)
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+        self.extend_collection(output, Collection::extend)
     }
 }
 
