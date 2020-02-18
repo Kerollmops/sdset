@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, exponential_offset_ge_by_key};
+use crate::{SetOperation, Collection, exponential_offset_ge_by_key};
 
 /// Represent the _difference_ set operation that will be applied to multiple slices
 /// of two different types.
@@ -72,8 +72,9 @@ where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_vec<X, E>(mut self, output: &mut Vec<X>, extend: E)
-    where E: Fn(&mut Vec<X>, &'a [T]),
+    fn extend_collection<C, X, E>(mut self, output: &mut C, extend: E)
+    where C: Collection<X>,
+          E: Fn(&mut C, &'a [T]),
     {
         while let Some(first) = self.base.first().map(|x| (self.f)(x)) {
             let mut minimum = None;
@@ -118,8 +119,8 @@ where T: Clone,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_vec(self, output: &mut Vec<T>) {
-        self.extend_vec(output, Vec::extend_from_slice)
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+        self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
@@ -128,8 +129,8 @@ where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_vec(self, output: &mut Vec<&'a T>) {
-        self.extend_vec(output, Extend::extend)
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+        self.extend_collection(output, Collection::extend)
     }
 }
 

@@ -61,10 +61,12 @@ extern crate serde;
 pub mod duo;
 pub mod multi;
 pub mod set;
+mod collection;
 mod two_minimums;
 
 use std::cmp::{self, Ordering};
 pub use crate::set::{Set, SetBuf, Error};
+pub use crate::collection::{Collection, Counter};
 
 /// Exponential searches this sorted slice for a given element.
 ///
@@ -207,13 +209,13 @@ where F: FnMut(&T) -> B,
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
 pub trait SetOperation<T>: Sized {
-    /// Extend a [`Vec`] with the values of the [`Set`]s using this set operation.
-    fn extend_vec(self, output: &mut Vec<T>);
+    /// Extend a [`Collection`] with the values of the [`Set`]s using this set operation.
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T>;
 
-    /// Create a [`SetBuf`] using the [`SetOperation::extend_vec`] method.
-    fn into_set_buf(self) -> SetBuf<T> {
+    /// Create a [`SetBuf`] using the [`SetOperation::extend_collection`] method.
+    fn into_set_buf(self) -> SetBuf<T> where T: Clone {
         let mut vec = Vec::new();
-        self.extend_vec(&mut vec);
+        self.extend_collection(&mut vec);
         SetBuf::new_unchecked(vec)
     }
 }

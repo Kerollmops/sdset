@@ -1,6 +1,6 @@
 use crate::set::{Set, vec_sets_into_slices};
 use crate::two_minimums::{two_minimums, Minimums::*};
-use crate::SetOperation;
+use crate::{SetOperation, Collection};
 
 /// Represent the _union_ set operation that will be applied to the slices.
 ///
@@ -38,9 +38,10 @@ impl<'a, T> Union<'a, T> {
 
 impl<'a, T: Ord> Union<'a, T> {
     #[inline]
-    fn extend_vec<U, F, G>(mut self, output: &mut Vec<U>, extend: F, push: G)
-    where F: Fn(&mut Vec<U>, &'a [T]),
-          G: Fn(&mut Vec<U>, &'a T),
+    fn extend_collection<C, U, F, G>(mut self, output: &mut C, extend: F, push: G)
+    where C: Collection<U>,
+          F: Fn(&mut C, &'a [T]),
+          G: Fn(&mut C, &'a T),
     {
         if let Some(slice) = self.slices.first() {
             output.reserve(slice.len());
@@ -71,17 +72,15 @@ impl<'a, T: Ord> Union<'a, T> {
     }
 }
 
-
-
 impl<'a, T: Ord + Clone> SetOperation<T> for Union<'a, T> {
-    fn extend_vec(self, output: &mut Vec<T>) {
-        self.extend_vec(output, Vec::extend_from_slice, |v, x| v.push(x.clone()));
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+        self.extend_collection(output, Collection::extend_from_slice, |v, x| v.push(x.clone()));
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
-    fn extend_vec(self, output: &mut Vec<&'a T>) {
-        self.extend_vec(output, Extend::extend, Vec::push);
+    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+        self.extend_collection(output, Collection::extend, Collection::push);
     }
 }
 
