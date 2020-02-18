@@ -61,10 +61,12 @@ extern crate serde;
 pub mod duo;
 pub mod multi;
 pub mod set;
+mod collection;
 mod two_minimums;
 
 use std::cmp::{self, Ordering};
 pub use crate::set::{Set, SetBuf, Error};
+pub use crate::collection::{Collection, Counter};
 
 /// Exponential searches this sorted slice for a given element.
 ///
@@ -203,70 +205,6 @@ where F: FnMut(&T) -> B,
       B: Ord,
 {
     exponential_offset_ge_by(slice, |x| f(x).cmp(b))
-}
-
-pub trait Collection<T> {
-    fn push(&mut self, elem: T);
-    fn extend_from_slice(&mut self, elems: &[T]) where T: Clone;
-    fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T>;
-    fn reserve(&mut self, size: usize) { }
-}
-
-impl<T> Collection<T> for Vec<T> {
-    fn push(&mut self, elem: T) {
-        Vec::push(self, elem);
-    }
-
-    fn extend_from_slice(&mut self, elems: &[T]) where T: Clone {
-        Vec::extend_from_slice(self, elems);
-    }
-
-    fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T> {
-        Extend::extend(self, elems);
-    }
-
-    fn reserve(&mut self, size: usize) {
-        Vec::reserve(self, size);
-    }
-}
-
-/// A [`Collection`] that only counts the final size of a set operation.
-///
-/// It is meant to be used to avoid unecessary allocations.
-///
-/// ```
-/// # use sdset::Error;
-/// # fn try_main() -> Result<(), Error> {
-/// use sdset::duo::OpBuilder;
-/// use sdset::{SetOperation, Set, SetBuf, Counter};
-///
-/// let a = Set::new(&[1, 2, 4, 6, 7])?;
-/// let b = Set::new(&[2, 3, 4, 5, 6, 7])?;
-///
-/// let op = OpBuilder::new(a, b).union();
-///
-/// let mut counter = Counter::default();
-/// SetOperation::<i32>::extend_collection(op, &mut counter);
-///
-/// assert_eq!(counter.0, 7);
-/// # Ok(()) }
-/// # try_main().unwrap();
-/// ```
-#[derive(Default)]
-pub struct Counter(pub usize);
-
-impl<T> Collection<T> for Counter {
-    fn push(&mut self, elem: T) {
-        self.0 = self.0.saturating_add(1);
-    }
-
-    fn extend_from_slice(&mut self, elems: &[T]) where T: Clone {
-        self.0 = self.0.saturating_add(elems.len());
-    }
-
-    fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T> {
-        self.0 = self.0.saturating_add(elems.into_iter().count());
-    }
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
