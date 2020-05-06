@@ -41,13 +41,13 @@ impl<'a, T> Difference<'a, T> {
 
 impl<'a, T: Ord> Difference<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a [T])
+          F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         let (base, others) = match self.slices.split_first_mut() {
             Some(split) => split,
-            None => return,
+            None => return Ok(()),
         };
 
         while let Some(first) = base.first() {
@@ -65,28 +65,33 @@ impl<'a, T: Ord> Difference<'a, T> {
                 Some(min) if min == first => *base = exponential_offset_ge(&base[1..], min),
                 Some(min) => {
                     let off = base.iter().take_while(|&x| x < min).count();
-                    extend(output, &base[..off]);
+                    extend(output, &base[..off])?;
 
                     *base = &base[off..];
                 },
                 None => {
-                    extend(output, base);
+                    extend(output, base)?;
                     break;
                 },
             }
         }
+        Ok(())
     }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Difference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
-        self.extend_collection(output, Collection::extend_from_slice);
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
+        self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
-        self.extend_collection(output, Collection::extend);
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
+        self.extend_collection(output, Collection::extend)
     }
 }
 

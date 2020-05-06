@@ -59,26 +59,26 @@ fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
 
 impl<'a, T: Ord> Intersection<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F>(mut self, output: &mut C, push: F)
+    fn extend_collection<C, U, F>(mut self, output: &mut C, push: F) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a T)
+          F: Fn(&mut C, &'a T) -> Result<(), C::Error>,
     {
-        if self.slices.is_empty() { return }
-        if self.slices.iter().any(|s| s.is_empty()) { return }
+        if self.slices.is_empty() { return Ok(()) }
+        if self.slices.iter().any(|s| s.is_empty()) { return Ok(()) }
 
         loop {
             match test_equality(&self.slices) {
                 Equal(x) => {
-                    push(output, x);
+                    push(output, x)?;
                     for slice in &mut self.slices {
                         *slice = &slice[1..];
-                        if slice.is_empty() { return }
+                        if slice.is_empty() { return Ok(()) }
                     }
                 },
                 NotEqual(x) => {
                     for slice in &mut self.slices {
                         *slice = exponential_offset_ge(slice, x);
-                        if slice.is_empty() { return }
+                        if slice.is_empty() { return Ok(()) }
                     }
                 }
             }
@@ -87,13 +87,17 @@ impl<'a, T: Ord> Intersection<'a, T> {
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Intersection<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
         self.extend_collection(output, |v, x| v.push(x.clone()))
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
         self.extend_collection(output, Collection::push)
     }
 }

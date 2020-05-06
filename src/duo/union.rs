@@ -39,12 +39,12 @@ impl<'a, T> Union<'a, T> {
 
 impl<'a, T: Ord> Union<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a [T])
+          F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         let min_len = cmp::max(self.a.len(), self.b.len());
-        output.reserve(min_len);
+        output.reserve(min_len)?;
 
         while !self.a.is_empty() && !self.b.is_empty() {
             let a = &self.a[0];
@@ -53,39 +53,44 @@ impl<'a, T: Ord> Union<'a, T> {
             match a.cmp(&b) {
                  Ordering::Less => {
                     let off = self.a.iter().take_while(|&x| x < b).count();
-                    extend(output, &self.a[..off]);
+                    extend(output, &self.a[..off])?;
 
                     self.a = &self.a[off..];
                  },
                  Ordering::Equal => {
                     let off = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).count();
-                    extend(output, &self.a[..off]);
+                    extend(output, &self.a[..off])?;
 
                     self.a = &self.a[off..];
                     self.b = &self.b[off..];
                  },
                  Ordering::Greater => {
                     let off = self.b.iter().take_while(|&x| x < a).count();
-                    extend(output, &self.b[..off]);
+                    extend(output, &self.b[..off])?;
 
                     self.b = &self.b[off..];
                  },
              }
         }
 
-        extend(output, self.a);
-        extend(output, self.b);
+        extend(output, self.a)?;
+        extend(output, self.b)?;
+        Ok(())
     }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Union<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
         self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
         self.extend_collection(output, Collection::extend)
     }
 }
