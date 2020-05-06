@@ -39,9 +39,9 @@ impl<'a, T> Intersection<'a, T> {
 
 impl<'a, T: Ord> Intersection<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a [T])
+          F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         while !self.a.is_empty() && !self.b.is_empty() {
             let a = &self.a[0];
@@ -49,7 +49,7 @@ impl<'a, T: Ord> Intersection<'a, T> {
 
             if a == b {
                 let off = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).count();
-                extend(output, &self.a[..off]);
+                extend(output, &self.a[..off])?;
 
                 self.a = &self.a[off..];
                 self.b = &self.b[off..];
@@ -60,17 +60,22 @@ impl<'a, T: Ord> Intersection<'a, T> {
                 self.b = exponential_offset_ge(self.b, max);
             }
         }
+        Ok(())
     }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Intersection<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
         self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
         self.extend_collection(output, Collection::extend)
     }
 }

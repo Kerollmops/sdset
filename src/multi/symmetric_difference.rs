@@ -38,17 +38,17 @@ impl<'a, T> SymmetricDifference<'a, T> {
 
 impl<'a, T: Ord> SymmetricDifference<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F, G>(mut self, output: &mut C, extend: F, push: G)
+    fn extend_collection<C, U, F, G>(mut self, output: &mut C, extend: F, push: G) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a [T]),
-          G: Fn(&mut C, &'a T),
+          F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
+          G: Fn(&mut C, &'a T) -> Result<(), C::Error>,
     {
         loop {
             match two_minimums(&self.slices) {
                 Two((i, f), (_, s)) => {
                     if f != s {
                         let off = self.slices[i].iter().take_while(|&e| e < s).count();
-                        extend(output, &self.slices[i][..off]);
+                        extend(output, &self.slices[i][..off])?;
                         self.slices[i] = &self.slices[i][off..];
                     }
                     else {
@@ -61,29 +61,34 @@ impl<'a, T: Ord> SymmetricDifference<'a, T> {
                         }
                         // if count is odd
                         if count % 2 != 0 {
-                            push(output, f);
+                            push(output, f)?;
                         }
                     }
                 },
                 One((i, _)) => {
-                    extend(output, self.slices[i]);
+                    extend(output, self.slices[i])?;
                     break;
                 },
                 Nothing => break,
             }
         }
+        Ok(())
     }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for SymmetricDifference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
-        self.extend_collection(output, Collection::extend_from_slice, |v, x| v.push(x.clone()));
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
+        self.extend_collection(output, Collection::extend_from_slice, |v, x| v.push(x.clone()))
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for SymmetricDifference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
-        self.extend_collection(output, Collection::extend, Collection::push);
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
+        self.extend_collection(output, Collection::extend, Collection::push)
     }
 }
 

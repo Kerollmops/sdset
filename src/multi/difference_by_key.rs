@@ -72,9 +72,9 @@ where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_collection<C, X, E>(mut self, output: &mut C, extend: E)
+    fn extend_collection<C, X, E>(mut self, output: &mut C, extend: E) -> Result<(), C::Error>
     where C: Collection<X>,
-          E: Fn(&mut C, &'a [T]),
+          E: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         while let Some(first) = self.base.first().map(|x| (self.f)(x)) {
             let mut minimum = None;
@@ -99,17 +99,18 @@ where F: Fn(&T) -> K,
                         self.base = exponential_offset_ge_by_key(&self.base[1..], &min, &self.f);
                     } else {
                         let off = self.base.iter().take_while(|&x| (self.f)(x) < min).count();
-                        extend(output, &self.base[..off]);
+                        extend(output, &self.base[..off])?;
 
                         self.base = &self.base[off..];
                     }
                 },
                 None => {
-                    extend(output, self.base);
+                    extend(output, self.base)?;
                     break;
                 },
             }
         }
+        Ok(())
     }
 }
 
@@ -119,7 +120,9 @@ where T: Clone,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>,
+    {
         self.extend_collection(output, Collection::extend_from_slice)
     }
 }
@@ -129,7 +132,9 @@ where F: Fn(&T) -> K,
       G: Fn(&U) -> K,
       K: Ord,
 {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>,
+    {
         self.extend_collection(output, Collection::extend)
     }
 }

@@ -210,12 +210,13 @@ where F: FnMut(&T) -> B,
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
 pub trait SetOperation<T>: Sized {
     /// Extend a [`Collection`] with the values of the [`Set`]s using this set operation.
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T>;
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>;
 
     /// Create a [`SetBuf`] using the [`SetOperation::extend_collection`] method.
     fn into_set_buf(self) -> SetBuf<T> where T: Clone {
         let mut vec = Vec::new();
-        self.extend_collection(&mut vec);
+        self.extend_collection(&mut vec).unwrap();
         SetBuf::new_unchecked(vec)
     }
 }

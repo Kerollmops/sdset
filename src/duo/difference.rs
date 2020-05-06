@@ -38,9 +38,9 @@ impl<'a, T> Difference<'a, T> {
 
 impl<'a, T: Ord> Difference<'a, T> {
     #[inline]
-    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F)
+    fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F) -> Result<(), C::Error>
     where C: Collection<U>,
-          F: Fn(&mut C, &'a [T])
+          F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         while let Some(first) = self.a.first() {
             self.b = exponential_offset_ge(self.b, first);
@@ -50,27 +50,32 @@ impl<'a, T: Ord> Difference<'a, T> {
                 Some(min) if min == first => self.a = exponential_offset_ge(&self.a[1..], min),
                 Some(min) => {
                     let off = self.a.iter().take_while(|&x| x < min).count();
-                    extend(output, &self.a[..off]);
+                    extend(output, &self.a[..off])?;
 
                     self.a = &self.a[off..];
                 },
                 None => {
-                    extend(output, self.a);
+                    extend(output, self.a)?;
                     break;
                 },
             }
         }
+        Ok(())
     }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Difference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<T>
+    {
         self.extend_collection(output, Collection::extend_from_slice)
     }
 }
 
 impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
-    fn extend_collection<C>(self, output: &mut C) where C: Collection<&'a T> {
+    fn extend_collection<C>(self, output: &mut C) -> Result<(), C::Error>
+    where C: Collection<&'a T>
+    {
         self.extend_collection(output, Collection::extend)
     }
 }
