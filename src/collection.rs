@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use std::collections::{HashSet, BTreeSet};
+use std::marker;
 
 /// This trait is meant to abstract any kind of collection
 /// (i.e. [`Vec`], [`HashSet`]).
@@ -88,33 +89,50 @@ impl<T: Ord> Collection<T> for BTreeSet<T> {
 ///
 /// let op = OpBuilder::new(a, b).union();
 ///
-/// let mut counter = Counter::default();
-/// SetOperation::<i32>::extend_collection(op, &mut counter);
+/// let mut counter = Counter::<i32>::default();
+/// op.extend_collection(&mut counter);
 ///
-/// assert_eq!(counter.0, 7);
+/// assert_eq!(counter.get(), 7);
 /// # Ok(()) }
 /// # try_main().unwrap();
 /// ```
-#[derive(Default)]
-pub struct Counter(pub usize);
 
-impl Counter {
-    /// Create a new [`Counter`] initialized with 0;
-    pub fn new() -> Counter {
-        Counter::default()
+pub struct Counter<T> {
+    count: usize,
+    _phantom: marker::PhantomData<T>,
+}
+
+impl<T> Default for Counter<T> {
+    fn default() -> Counter<T> {
+        Counter {
+            count: 0,
+            _phantom: marker::PhantomData,
+        } 
     }
 }
 
-impl<T> Collection<T> for Counter {
+impl<T> Counter<T> {
+    /// Create a new [`Counter`] initialized with 0.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the count for the [`Operation`].
+    pub fn get(&self) -> usize {
+        self.count
+    }
+}
+
+impl<T> Collection<T> for Counter<T> {
     fn push(&mut self, _elem: T) {
-        self.0 = self.0.saturating_add(1);
+        self.count = self.count.saturating_add(1);
     }
 
     fn extend_from_slice(&mut self, elems: &[T]) where T: Clone {
-        self.0 = self.0.saturating_add(elems.len());
+        self.count = self.count.saturating_add(elems.len());
     }
 
     fn extend<I>(&mut self, elems: I) where I: IntoIterator<Item=T> {
-        self.0 = self.0.saturating_add(elems.into_iter().count());
+        self.count = self.count.saturating_add(elems.into_iter().count());
     }
 }
