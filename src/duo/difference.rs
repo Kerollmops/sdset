@@ -126,7 +126,9 @@ impl<'a, T: Ord> Difference<'a, T> {
             let minimum = self.b.first();
 
             match minimum {
-                Some(min) if min == first => self.a = exponential_offset_ge(&self.a[1..], min),
+                Some(min) if min == first => {
+                    self.a = &self.a[1..];
+                },
                 Some(min) => {
                     let off = self.a.iter().take_while(|&x| x < min).count();
                     extend(output, &self.a[..off])?;
