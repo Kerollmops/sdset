@@ -49,10 +49,14 @@ enum Equality<'a, T: 'a> {
 fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
     let mut is_equal = true;
     let mut max = &slices[0][0];
-    for x in slices {
-        let x = &x[0];
-        if is_equal { is_equal = max == x }
-        max = cmp::max(max, x);
+    for s in slices {
+        let x = &s[0];
+        if x != max {
+            is_equal = false;
+            if x > max {
+                max = x;
+            }
+        }
     }
     if is_equal { Equal(max) } else { NotEqual(max) }
 }
@@ -75,10 +79,12 @@ impl<'a, T: Ord> Intersection<'a, T> {
                         if slice.is_empty() { return Ok(()) }
                     }
                 },
-                NotEqual(x) => {
+                NotEqual(max) => {
                     for slice in &mut self.slices {
-                        *slice = exponential_offset_ge(slice, x);
-                        if slice.is_empty() { return Ok(()) }
+                        if &slice[0] != max {
+                            *slice = exponential_offset_ge(slice, max);
+                            if slice.is_empty() { return Ok(()) }
+                        }
                     }
                 }
             }

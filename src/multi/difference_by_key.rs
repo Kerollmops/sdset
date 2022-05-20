@@ -96,7 +96,7 @@ where F: Fn(&T) -> K,
             match minimum {
                 Some(min) => {
                     if min == first {
-                        self.base = exponential_offset_ge_by_key(&self.base[1..], &min, &self.f);
+                        self.base = &self.base[1..];
                     } else {
                         let off = self.base.iter().take_while(|&x| (self.f)(x) < min).count();
                         extend(output, &self.base[..off])?;
