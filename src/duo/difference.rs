@@ -36,6 +36,85 @@ impl<'a, T> Difference<'a, T> {
     }
 }
 
+enum IterState {
+    FromA,
+    FromB,
+    FromEither
+}
+
+struct DifferenceIter<'a, It> {
+    a: &'a [It],
+    b: &'a [It],
+    next_b: Option<&'a It>,
+}
+
+impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
+    type Item = &'a It;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(a) = self.a.first() {
+            match self.b.first() {
+                Some(b) => {
+                    if a < b {
+                        let result = &self.a[0];
+                        self.a = &self.a[1..];
+                        return Some(result);
+                    } else if b == a {
+                        self.a = exponential_offset_ge(&self.a[1..], b);
+                    } else { // b < a
+                        self.b = exponential_offset_ge(self.b, a);
+                    }
+                }
+                None => {
+                    let result = &self.a[0];
+                    self.a = &self.a[1..];
+                    return Some(result);
+                }
+            }
+        }
+        return None;
+    }
+}
+
+// struct DifferenceIter<'a, It> {
+//     a: &'a [It],
+//     b: &'a [It],
+//     iter: Box<&'a dyn Iterator<Item=&'a It>>,//std::iter::TakeWhile<std::slice::Iter<'a, It>, It>
+//     iter_count: usize
+// }
+
+// impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
+//     type Item = &'a It;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if let Some(i) = self.iter.next() { 
+//             self.iter_count += 1;
+//             return Some(i);
+//         }
+//         self.a = &self.a[self.iter_count..];
+//         while let Some(a) = self.a.first() {
+//             self.b = exponential_offset_ge(self.b, a);
+//             match self.b.first() {
+//                 Some(b) => {
+//                     if b == a {
+//                         self.a = exponential_offset_ge(&self.a[1..], b);
+//                     } else { // b > a
+//                         self.iter = Box::new(&self.a.iter().take_while(|&x| x < b));
+//                         return self.iter.next();
+//                     }
+//                 }
+//                 None => {
+//                     self.iter = Box::new(&self.a.iter());else
+//                     return self.iter.next();
+//                 }
+//             }
+//         }
+//         return None;
+//     }
+// }
+
+
+
 impl<'a, T: Ord> Difference<'a, T> {
     #[inline]
     fn extend_collection<C, U, F>(mut self, output: &mut C, extend: F) -> Result<(), C::Error>
