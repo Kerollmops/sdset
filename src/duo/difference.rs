@@ -36,16 +36,9 @@ impl<'a, T> Difference<'a, T> {
     }
 }
 
-enum IterState {
-    FromA,
-    FromB,
-    FromEither
-}
-
 struct DifferenceIter<'a, It> {
     a: &'a [It],
     b: &'a [It],
-    next_b: Option<&'a It>,
 }
 
 impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
@@ -60,7 +53,8 @@ impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
                         self.a = &self.a[1..];
                         return Some(result);
                     } else if b == a {
-                        self.a = exponential_offset_ge(&self.a[1..], b);
+                        self.a = &self.a[1..];
+                        self.b = &self.b[1..];
                     } else { // b < a
                         self.b = exponential_offset_ge(self.b, a);
                     }
@@ -75,45 +69,6 @@ impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
         return None;
     }
 }
-
-// struct DifferenceIter<'a, It> {
-//     a: &'a [It],
-//     b: &'a [It],
-//     iter: Box<&'a dyn Iterator<Item=&'a It>>,//std::iter::TakeWhile<std::slice::Iter<'a, It>, It>
-//     iter_count: usize
-// }
-
-// impl<'a, It: Ord> Iterator for DifferenceIter<'a, It> {
-//     type Item = &'a It;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if let Some(i) = self.iter.next() { 
-//             self.iter_count += 1;
-//             return Some(i);
-//         }
-//         self.a = &self.a[self.iter_count..];
-//         while let Some(a) = self.a.first() {
-//             self.b = exponential_offset_ge(self.b, a);
-//             match self.b.first() {
-//                 Some(b) => {
-//                     if b == a {
-//                         self.a = exponential_offset_ge(&self.a[1..], b);
-//                     } else { // b > a
-//                         self.iter = Box::new(&self.a.iter().take_while(|&x| x < b));
-//                         return self.iter.next();
-//                     }
-//                 }
-//                 None => {
-//                     self.iter = Box::new(&self.a.iter());else
-//                     return self.iter.next();
-//                 }
-//             }
-//         }
-//         return None;
-//     }
-// }
-
-
 
 impl<'a, T: Ord> Difference<'a, T> {
     #[inline]
@@ -143,6 +98,14 @@ impl<'a, T: Ord> Difference<'a, T> {
         }
         Ok(())
     }
+
+    fn iter(self) -> DifferenceIter<'a, T>
+    {
+        return DifferenceIter {
+            a: self.a,
+            b: self.b
+        };
+    }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Difference<'a, T> {
@@ -171,8 +134,19 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[2, 4];
 
-        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 3]);
+        let diff: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
+        assert_eq!(&diff[..], &[1, 3]);
+    }
+
+    #[test]
+    fn two_slices_iter() {
+        let a = &[1, 2, 3];
+        let b = &[2, 4];
+        let d = Difference { a: a, b: b };
+        let v: Vec<i32> = d.iter().cloned().collect();
+        let v2: Vec<i32> = d.iter().cloned().collect();
+        assert_eq!(&v[..], &[1, 3]);
+        assert_eq!(&v[..], &v2[..]);
     }
 
     #[test]
@@ -180,8 +154,13 @@ mod tests {
         let a = &[1, 2, 3];
         let b = &[3];
 
-        let union_: SetBuf<i32> = Difference { a: a, b: b }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2]);
+        let d = Difference { a: a, b: b };
+        let v: Vec<i32> = d.iter().cloned().collect();
+        assert_eq!(&v[..], &[1, 2]);
+
+
+        let diff: SetBuf<i32> = d.into_set_buf();
+        assert_eq!(&diff[..], &[1, 2]);
     }
 
     quickcheck! {
@@ -196,6 +175,29 @@ mod tests {
             sort_dedup_vec(&mut b);
 
             let x: SetBuf<i32> = Difference { a: &a, b: &b }.into_set_buf();
+
+            let a = BTreeSet::from_iter(a);
+            let b = BTreeSet::from_iter(b);
+            let y = a.difference(&b);
+            let y: Vec<_> = y.cloned().collect();
+
+            x.as_slice() == y.as_slice()
+        }
+    }
+
+    quickcheck! {
+        fn qc_difference_iter(a: Vec<i32>, b: Vec<i32>) -> bool {
+            use std::collections::BTreeSet;
+            use std::iter::FromIterator;
+
+            let mut a = a;
+            let mut b = b;
+
+            sort_dedup_vec(&mut a);
+            sort_dedup_vec(&mut b);
+
+            let d = Difference { a: &a, b: &b }.iter();
+            let x: Vec<_> = d.cloned().collect();
 
             let a = BTreeSet::from_iter(a);
             let b = BTreeSet::from_iter(b);
