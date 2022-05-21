@@ -36,7 +36,7 @@ impl<'a, T> Difference<'a, T> {
     }
 }
 
-struct DifferenceIter<'a, It> {
+pub struct DifferenceIter<'a, It> {
     a: &'a [It],
     b: &'a [It],
 }
@@ -99,7 +99,7 @@ impl<'a, T: Ord> Difference<'a, T> {
         Ok(())
     }
 
-    fn iter(self) -> DifferenceIter<'a, T>
+    fn iter(&self) -> DifferenceIter<'a, T>
     {
         return DifferenceIter {
             a: self.a,
@@ -124,6 +124,22 @@ impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for Difference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = DifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        return self.iter();
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a Difference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = DifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        return self.iter();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,9 +160,13 @@ mod tests {
         let b = &[2, 4];
         let d = Difference { a: a, b: b };
         let v: Vec<i32> = d.iter().cloned().collect();
-        let v2: Vec<i32> = d.iter().cloned().collect();
+        let v2: Vec<i32> = d.into_iter().cloned().collect();
+        let v3: Vec<i32> = d.iter().cloned().collect();
+        let v4: Vec<i32> = d.into_iter().cloned().collect();
         assert_eq!(&v[..], &[1, 3]);
         assert_eq!(&v[..], &v2[..]);
+        assert_eq!(&v[..], &v3[..]);
+        assert_eq!(&v[..], &v4[..]);
     }
 
     #[test]
@@ -155,7 +175,7 @@ mod tests {
         let b = &[3];
 
         let d = Difference { a: a, b: b };
-        let v: Vec<i32> = d.iter().cloned().collect();
+        let v: Vec<i32> = d.into_iter().cloned().collect();
         assert_eq!(&v[..], &[1, 2]);
 
 
@@ -196,7 +216,7 @@ mod tests {
             sort_dedup_vec(&mut a);
             sort_dedup_vec(&mut b);
 
-            let d = Difference { a: &a, b: &b }.iter();
+            let d = Difference { a: &a, b: &b }.into_iter();
             let x: Vec<_> = d.cloned().collect();
 
             let a = BTreeSet::from_iter(a);
