@@ -27,14 +27,30 @@ use crate::{SetOperation, Collection, exponential_offset_ge};
 /// ```
 #[derive(Clone)]
 pub struct Difference<'a, T: 'a> {
-    slices: Vec<&'a [T]>,
+    base: &'a [T],
+    others: Vec<&'a [T]>,
 }
 
 impl<'a, T> Difference<'a, T> {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(slices: Vec<&'a Set<T>>) -> Self {
+        let mut it = slices.iter();
         Self {
-            slices: vec_sets_into_slices(slices),
+            base: match it.next() {
+                Some(&x) => {
+                    x
+                },
+                None => {
+                    &[]
+                }
+            },
+            others: if slices.len() < 2 {
+                vec![]
+            } else {
+                let mut o = Vec::<&[T]>::with_capacity(slices.len()-1);
+                Extend::extend(&mut o, it.filter(|&x| x.len() > 0).map(|&x| x.as_slice()));
+                o
+            },
         }
     }
 }
@@ -45,36 +61,59 @@ impl<'a, T: Ord> Difference<'a, T> {
     where C: Collection<U>,
           F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
-        let (base, others) = match self.slices.split_first_mut() {
-            Some(split) => split,
-            None => return Ok(()),
-        };
-
-        while let Some(first) = base.first() {
-            let mut minimum = None;
-            for slice in others.iter_mut() {
-                *slice = exponential_offset_ge(slice, first);
-                minimum = match (minimum, slice.first()) {
-                    (Some(min), Some(first)) => Some(cmp::min(min, first)),
-                    (None, Some(first)) => Some(first),
-                    (min, _) => min,
-                };
+        if self.others.len() == 0 {
+            extend(output, self.base)?;
+            return Ok(());
+        }
+        while let Some(first) = self.base.first() {
+            let mut minimum = first;
+            let mut i: usize = 0;
+            while i < self.others.len() {
+                let m = &self.others[i][0];
+                if m > first {
+                    minimum = m;
+                    break;
+                } else {
+                    self.others[i] = exponential_offset_ge(self.others[i], first);
+                    if let Some(m) = self.others[i].first() {
+                        minimum = m;
+                        break;
+                    } else {
+                        self.others.swap_remove(i);
+                    }
+                }
+            }
+            i += 1;
+            while i < self.others.len() {
+                let x = &self.others[i][0];
+                if x < first {
+                    self.others[i] = exponential_offset_ge(self.others[i], first);
+                    if let Some(x) = self.others[i].first() {
+                        if x < minimum {
+                            minimum = x;
+                        }
+                        i += 1;
+                    } else {
+                        self.others.swap_remove(i);
+                    }
+                } else {
+                    if x < minimum {
+                        minimum = x;
+                    }
+                    i += 1;
+                }
             }
 
-            match minimum {
-                Some(min) if min == first => {
-                    *base = &base[1..];
-                },
-                Some(min) => {
-                    let off = base.iter().take_while(|&x| x < min).count();
-                    extend(output, &base[..off])?;
+            if self.others.len() == 0 {
+                extend(output, self.base)?;
+                break;
+            } else if minimum == first {
+                self.base = &self.base[1..];
+            } else { // minimum > first
+                let off = self.base.iter().take_while(|&x| x < minimum).count();
+                extend(output, &self.base[..off])?;
 
-                    *base = &base[off..];
-                },
-                None => {
-                    extend(output, base)?;
-                    break;
-                },
+                self.base = &self.base[off..];
             }
         }
         Ok(())
@@ -104,54 +143,54 @@ mod tests {
 
     #[test]
     fn no_slice() {
-        let difference_: SetBuf<i32> = Difference { slices: vec![] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![]).into_set_buf();
         assert_eq!(&difference_[..], &[]);
     }
 
     #[test]
     fn one_empty_slice() {
-        let a: &[i32] = &[];
+        let a: &Set<i32> = Set::<i32>::new_unchecked(&[]);
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![a]).into_set_buf();
         assert_eq!(&difference_[..], &[]);
     }
 
     #[test]
     fn one_slice() {
-        let a = &[1, 2, 3];
+        let a = Set::new_unchecked(&[1, 2, 3]);
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![a]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 2, 3]);
     }
 
     #[test]
     fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 4];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[2, 4]);
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![a,b]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 3]);
     }
 
     #[test]
     fn two_slices_special_case() {
-        let a = &[1, 2, 3];
-        let b = &[3];
+        let a = Set::new_unchecked(&[1, 2, 3]);
+        let b = Set::new_unchecked(&[3]);
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![a, b]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 2]);
     }
 
     #[test]
     fn three_slices() {
-        let a = &[1, 2, 3, 6, 7];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5, 7];
+        let a = Set::new_unchecked(&[1, 2, 3, 6, 7]);
+        let b = Set::new_unchecked(&[2, 3, 4]);
+        let c = Set::new_unchecked(&[3, 4, 5, 7]);
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b, c] }.into_set_buf();
+        let difference_: SetBuf<i32> = Difference::new(vec![a, b, c]).into_set_buf();
         assert_eq!(&difference_[..], &[1, 6]);
     }
-
+    
     quickcheck! {
         fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
             use std::collections::BTreeSet;
@@ -165,8 +204,8 @@ mod tests {
             }
 
             let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Difference { slices: xss }.into_set_buf()
+                let xss: Vec<&Set<i32>> = xss.iter().map(|xs| Set::new_unchecked(&xs[..])).collect();
+                Difference::new(xss).into_set_buf()
             };
 
             let mut xss = xss.into_iter();
@@ -195,69 +234,101 @@ mod bench {
 
     #[bench]
     fn two_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (1..101).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn two_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (51..151).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (51..151).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn two_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (100..200).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn three_slices_big(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (1..101).collect();
-        let c: Vec<_> = (2..102).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (1..101).collect();
+        let cv: Vec<_> = (2..102).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
+        let c = Set::new_unchecked(cv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b, &c] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b,c]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn three_slices_big2(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (34..134).collect();
-        let c: Vec<_> = (66..167).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (34..134).collect();
+        let cv: Vec<_> = (66..167).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
+        let c = Set::new_unchecked(cv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b, &c] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b,c]).into_set_buf();
             test::black_box(|| difference_);
         });
     }
 
     #[bench]
     fn three_slices_big3(bench: &mut Bencher) {
-        let a: Vec<_> = (0..100).collect();
-        let b: Vec<_> = (100..200).collect();
-        let c: Vec<_> = (200..300).collect();
+        let av: Vec<_> = (0..100).collect();
+        let bv: Vec<_> = (100..200).collect();
+        let cv: Vec<_> = (200..300).collect();
+        let a = Set::new_unchecked(av.as_slice());
+        let b = Set::new_unchecked(bv.as_slice());
+        let c = Set::new_unchecked(cv.as_slice());
 
         bench.iter(|| {
-            let difference_: SetBuf<i32> = Difference { slices: vec![&a, &b, &c] }.into_set_buf();
+            let difference_: SetBuf<i32> = Difference::new(vec![a,b,c]).into_set_buf();
+            test::black_box(|| difference_);
+        });
+    }
+
+    #[bench]
+    fn hundred_small_slices(bench: &mut Bencher) {
+        let av: Vec<_> = (0..100).collect();
+
+        bench.iter(|| {
+            let mut sets: Vec<&Set<i32>> = Vec::with_capacity(101);
+            let a = Set::new_unchecked(av.as_slice());
+            sets.push(a);
+            for i in 0..100 {
+                let b = Set::new_unchecked(&av[i..i+1]);
+                sets.push(b);
+            }
+            let difference_: SetBuf<i32> = Difference::new(sets).into_set_buf();
             test::black_box(|| difference_);
         });
     }
