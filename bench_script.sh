@@ -23,20 +23,22 @@ fi
 
 exit_if_dirty() {
     if ! git diff-files --quiet; then
-        echo 'Your repository must not be dirty'
-        exit 1
+        NEW="latest"
     fi
 }
 
-if [ ! -f $NEW.bench ]; then
-    exit_if_dirty
-    git checkout $NEW
+exit_if_dirty
+if [[ "$NEW" = latest ]]; then
     $CARGO_BENCH_CMD > $NEW.bench
-    git checkout -
+    else
+    if [ ! -f $NEW.bench ]; then
+        git checkout $NEW
+        $CARGO_BENCH_CMD > $NEW.bench
+        git checkout -
+    fi
 fi
 
 if [ ! -f $OLD.bench ]; then
-    exit_if_dirty
     git checkout $OLD
     $CARGO_BENCH_CMD > $OLD.bench
     git checkout -

@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, Collection, exponential_offset_ge};
+use crate::{SetOperation, Collection, exponential_offset_ge, exponential_offset_ge_maybe};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -61,59 +61,37 @@ impl<'a, T: Ord> Difference<'a, T> {
     where C: Collection<U>,
           F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
-        if self.others.len() == 0 {
-            extend(output, self.base)?;
-            return Ok(());
-        }
         while let Some(first) = self.base.first() {
-            let mut minimum = first;
+            let mut minimum:Option<&T> = None;
             let mut i: usize = 0;
             while i < self.others.len() {
-                let m = &self.others[i][0];
-                if m > first {
-                    minimum = m;
-                    break;
-                } else {
-                    self.others[i] = exponential_offset_ge(self.others[i], first);
-                    if let Some(m) = self.others[i].first() {
-                        minimum = m;
-                        break;
-                    } else {
-                        self.others.swap_remove(i);
-                    }
-                }
-            }
-            i += 1;
-            while i < self.others.len() {
-                let x = &self.others[i][0];
-                if x < first {
-                    self.others[i] = exponential_offset_ge(self.others[i], first);
-                    if let Some(x) = self.others[i].first() {
-                        if x < minimum {
-                            minimum = x;
+                self.others[i] = exponential_offset_ge_maybe(self.others[i], first);
+                if let Some(x) = self.others[i].first() {
+                    if let Some(min) = minimum {
+                        if x < min {
+                            minimum = Some(x);
                         }
-                        i += 1;
                     } else {
-                        self.others.swap_remove(i);
-                    }
-                } else {
-                    if x < minimum {
-                        minimum = x;
+                        minimum = Some(x);
                     }
                     i += 1;
+                } else {
+                    self.others.swap_remove(i);
                 }
             }
-
-            if self.others.len() == 0 {
+            
+            if let Some(min) = minimum {
+                if min == first {
+                    self.base = &self.base[1..];
+                } else { // minimum > first
+                    let off = self.base.iter().take_while(|&x| x < min).count();
+                    extend(output, &self.base[..off])?;
+    
+                    self.base = &self.base[off..];
+                }
+            } else {
                 extend(output, self.base)?;
                 break;
-            } else if minimum == first {
-                self.base = &self.base[1..];
-            } else { // minimum > first
-                let off = self.base.iter().take_while(|&x| x < minimum).count();
-                extend(output, &self.base[..off])?;
-
-                self.base = &self.base[off..];
             }
         }
         Ok(())
