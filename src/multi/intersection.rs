@@ -47,18 +47,18 @@ enum Equality<'a, T: 'a> {
 
 #[inline]
 fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
-    let mut is_equal = true;
+    let mut is_equal: usize = 1; // LLVM produced wasted instruction when this was bool
     let mut max = &slices[0][0];
     for s in slices {
         let x = &s[0];
         if x != max {
-            is_equal = false;
-            if x > max {
-                max = x;
-            }
+            is_equal = 0;
+        }
+        if x > max {
+            max = x;
         }
     }
-    if is_equal { Equal(max) } else { NotEqual(max) }
+    if is_equal != 0 { Equal(max) } else { NotEqual(max) }
 }
 
 impl<'a, T: Ord> Intersection<'a, T> {
