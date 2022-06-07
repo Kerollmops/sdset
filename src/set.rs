@@ -64,22 +64,6 @@ impl<T> Set<T> {
         unsafe { mem::transmute(slice) }
     }
 
-    /// Construct an empty [`Set`]. This is a convenence function that is equivalent to:
-    /// Set::new_unchecked(&[] as &[T; 0])
-    ///
-    /// ```
-    /// use sdset::{Set, Error};
-    /// # fn try_main() -> Result<(), Error> {
-    /// let set: &Set<i32> = Set::new_empty();
-    /// assert_eq!(set.len(), 0);
-    /// # Ok(()) }
-    /// # try_main().unwrap();
-    /// ```
-    #[inline]
-    pub fn new_empty() -> &'static Self
-    {
-        Self::new_unchecked(&[] as &[T; 0])
-    }
 
     /// Returns a [`Set`] containing all the values in the given range.
     ///
@@ -376,22 +360,6 @@ impl<T> SetBuf<T> {
     #[inline]
     pub fn new_unchecked(vec: Vec<T>) -> Self {
         SetBuf(vec)
-    }
-
-    /// Construct an empty [`SetBuf`]. This is a convenience function equivalent to:
-    /// SetBuf::<T>::new_unchecked(vec![])
-    ///
-    /// ```
-    /// use sdset::{SetBuf, Error};
-    /// # fn try_main() -> Result<(), Error> {
-    /// let setbuf: SetBuf<i32> = SetBuf::new_empty();
-    /// assert_eq!(setbuf.len(), 0);
-    /// # Ok(()) }
-    /// # try_main().unwrap();
-    /// ```
-    #[inline]
-    pub fn new_empty() -> Self {
-        SetBuf(Vec::<T>::new())
     }
 
     /// Return the [`Set`] owned by this [`SetBuf`].
