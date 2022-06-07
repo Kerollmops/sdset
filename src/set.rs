@@ -70,13 +70,13 @@ impl<T> Set<T> {
     /// ```
     /// use sdset::{Set, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// let set: &Set<i32> = Set::empty();
+    /// let set: &Set<i32> = Set::new_empty();
     /// assert_eq!(set.len(), 0);
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
     #[inline]
-    pub fn empty() -> &'static Self
+    pub fn new_empty() -> &'static Self
     {
         Self::new_unchecked(&[] as &[T; 0])
     }
@@ -384,13 +384,13 @@ impl<T> SetBuf<T> {
     /// ```
     /// use sdset::{SetBuf, Error};
     /// # fn try_main() -> Result<(), Error> {
-    /// let setbuf: SetBuf<i32> = SetBuf::empty();
+    /// let setbuf: SetBuf<i32> = SetBuf::new_empty();
     /// assert_eq!(setbuf.len(), 0);
     /// # Ok(()) }
     /// # try_main().unwrap();
     /// ```
     #[inline]
-    pub fn empty() -> Self {
+    pub fn new_empty() -> Self {
         SetBuf(Vec::<T>::new())
     }
 
