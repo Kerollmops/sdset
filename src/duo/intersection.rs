@@ -1,4 +1,3 @@
-use std::cmp;
 use crate::set::Set;
 use crate::{exponential_offset_ge, SetOperation, Collection};
 
@@ -54,10 +53,11 @@ impl<'a, T: Ord> Intersection<'a, T> {
                 self.a = &self.a[off..];
                 self.b = &self.b[off..];
             }
+            else if a < b {
+                self.a = exponential_offset_ge(self.a, b);
+            }
             else {
-                let max = cmp::max(a, b);
-                self.a = exponential_offset_ge(self.a, max);
-                self.b = exponential_offset_ge(self.b, max);
+                self.b = exponential_offset_ge(self.b, a);
             }
         }
         Ok(())

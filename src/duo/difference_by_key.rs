@@ -79,7 +79,7 @@ where F: Fn(&T) -> K,
             match self.b.first().map(|x| (self.g)(x)) {
                 Some(min) => {
                     if min == first {
-                        self.a = exponential_offset_ge_by_key(&self.a[1..], &min, &self.f)
+                        self.a = &self.a[1..];
                     } else {
                         let off = self.a.iter().take_while(|&x| (self.f)(x) < min).count();
                         extend(output, &self.a[..off])?;

@@ -2,7 +2,7 @@
 
 # This env variable is here to permit
 # to use a custom `cargo bench` command if needed
-CARGO_BENCH_CMD=${CARGO_BENCH_CMD:-cargo bench}
+CARGO_BENCH_CMD=${CARGO_BENCH_CMD:-cargo bench --features unstable}
 
 if [ $# -eq 0 ]; then
     echo "comparing benchmarks of HEAD~1 and HEAD..."

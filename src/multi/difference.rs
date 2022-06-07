@@ -62,7 +62,9 @@ impl<'a, T: Ord> Difference<'a, T> {
             }
 
             match minimum {
-                Some(min) if min == first => *base = exponential_offset_ge(&base[1..], min),
+                Some(min) if min == first => {
+                    *base = &base[1..];
+                },
                 Some(min) => {
                     let off = base.iter().take_while(|&x| x < min).count();
                     extend(output, &base[..off])?;
