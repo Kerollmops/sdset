@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, Collection, exponential_offset_ge_by_key};
+use crate::{SetOperation, Collection, exponential_offset_ge_maybe_by_key};
 
 /// Represent the _difference_ set operation that will be applied to multiple slices
 /// of two different types.
@@ -79,7 +79,7 @@ where F: Fn(&T) -> K,
         while let Some(first) = self.base.first().map(|x| (self.f)(x)) {
             let mut minimum = None;
             for slice in self.others.iter_mut() {
-                *slice = exponential_offset_ge_by_key(slice, &first, &self.g);
+                *slice = exponential_offset_ge_maybe_by_key(slice, &first, &self.g);
 
                 let first = match slice.first() {
                     Some(first) => Some((self.g)(first)),

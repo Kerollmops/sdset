@@ -1,5 +1,5 @@
 use crate::set::Set;
-use crate::{exponential_offset_ge_by_key, SetOperation, Collection};
+use crate::{exponential_offset_ge_maybe_by_key, SetOperation, Collection};
 
 /// Represent the _difference_ set operation that will be applied to two slices of different types.
 ///
@@ -74,7 +74,7 @@ where F: Fn(&T) -> K,
           E: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         while let Some(first) = self.a.first().map(|x| (self.f)(x)) {
-            self.b = exponential_offset_ge_by_key(self.b, &first, &self.g);
+            self.b = exponential_offset_ge_maybe_by_key(self.b, &first, &self.g);
 
             match self.b.first().map(|x| (self.g)(x)) {
                 Some(min) => {

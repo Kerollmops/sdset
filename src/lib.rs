@@ -208,6 +208,33 @@ where T: Ord,
 }
 
 #[inline]
+fn exponential_offset_ge_maybe_by_key<'a, T, B, F>(slice: &'a [T], b: &B, mut f: F) -> &'a [T]
+where F: FnMut(&T) -> B,
+      B: Ord,
+{
+    //exponential_offset_ge_by(slice, |x| f(x).cmp(b))
+    let max = cmp::min(3, slice.len());
+    let mut index = 0;
+    while index < max {
+        if f(&slice[index]).cmp(b) != Ordering::Less {
+            return &slice[index..];
+        }
+        index += 1;
+    }
+    while index < slice.len() && f(&slice[index]).cmp(b) == Ordering::Less {
+        index *= 2;
+    }
+
+    let half_bound = index / 2;
+    let bound = cmp::min(index + 1, slice.len());
+
+    match slice[half_bound..bound].binary_search_by(|x| f(&x).cmp(b)) {
+        Ok(pos) => &slice[half_bound + pos..],
+        Err(pos) => &slice[half_bound + pos..],
+    }
+}
+
+#[inline]
 fn exponential_offset_ge<'a, T>(slice: &'a [T], elem: &T) -> &'a [T]
 where T: Ord,
 {
