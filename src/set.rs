@@ -64,7 +64,6 @@ impl<T> Set<T> {
         unsafe { mem::transmute(slice) }
     }
 
-
     /// Returns a [`Set`] containing all the values in the given range.
     ///
     /// This function uses exponential searching internally
