@@ -1,5 +1,5 @@
 use crate::set::Set;
-use crate::{exponential_offset_ge_maybe, SetOperation, Collection};
+use crate::{exponential_offset_ge, SetOperation, Collection};
 
 /// Represent the _difference_ set operation that will be applied to two slices.
 ///
@@ -43,7 +43,7 @@ impl<'a, T: Ord> Difference<'a, T> {
           F: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
         while let Some(first) = self.a.first() {
-            self.b = exponential_offset_ge_maybe(self.b, first);
+            self.b = exponential_offset_ge(self.b, first);
             let minimum = self.b.first();
 
             match minimum {

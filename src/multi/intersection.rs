@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, Collection, exponential_offset_ge_maybe};
+use crate::{SetOperation, Collection, exponential_offset_ge};
 
 use self::Equality::*;
 
@@ -81,7 +81,7 @@ impl<'a, T: Ord> Intersection<'a, T> {
                 },
                 NotEqual(max) => {
                     for slice in &mut self.slices {
-                        *slice = exponential_offset_ge_maybe(slice, max);
+                        *slice = exponential_offset_ge(slice, max);
                         if slice.is_empty() { return Ok(()) }
                     }
                 }

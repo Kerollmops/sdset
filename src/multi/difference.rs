@@ -1,6 +1,6 @@
 use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
-use crate::{SetOperation, Collection, exponential_offset_ge_maybe};
+use crate::{SetOperation, Collection, exponential_offset_ge};
 
 /// Represent the _difference_ set operation that will be applied to the slices.
 ///
@@ -53,7 +53,7 @@ impl<'a, T: Ord> Difference<'a, T> {
         while let Some(first) = base.first() {
             let mut minimum = None;
             for slice in others.iter_mut() {
-                *slice = exponential_offset_ge_maybe(slice, first);
+                *slice = exponential_offset_ge(slice, first);
                 minimum = match (minimum, slice.first()) {
                     (Some(min), Some(first)) => Some(cmp::min(min, first)),
                     (None, Some(first)) => Some(first),
