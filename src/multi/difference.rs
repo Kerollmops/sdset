@@ -261,21 +261,4 @@ mod bench {
             test::black_box(|| difference_);
         });
     }
-    
-    #[bench]
-    fn hundred_small_slices(bench: &mut Bencher) {
-        let av: Vec<_> = (0..100).collect();
-
-        bench.iter(|| {
-            let mut sets: Vec<&Set<i32>> = Vec::with_capacity(101);
-            let a = Set::new_unchecked(av.as_slice());
-            sets.push(a);
-            for i in 0..100 {
-                let b = Set::new_unchecked(&av[i..i+1]);
-                sets.push(b);
-            }
-            let difference_: SetBuf<i32> = Difference::new(sets).into_set_buf();
-            test::black_box(|| difference_);
-        });
-    }
 }
