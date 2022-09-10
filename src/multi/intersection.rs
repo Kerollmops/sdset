@@ -81,10 +81,8 @@ impl<'a, T: Ord> Intersection<'a, T> {
                 },
                 NotEqual(max) => {
                     for slice in &mut self.slices {
-                        if &slice[0] != max {
-                            *slice = exponential_offset_ge(slice, max);
-                            if slice.is_empty() { return Ok(()) }
-                        }
+                        *slice = exponential_offset_ge(slice, max);
+                        if slice.is_empty() { return Ok(()) }
                     }
                 }
             }

@@ -182,29 +182,78 @@ where F: FnMut(&T) -> B,
     exponential_search_by(slice, |k| f(k).cmp(b))
 }
 
-#[inline]
+/// Given `slice` with elements sorted in increasing order,
+/// returns a subslice of `slice` starting at the first element that is
+/// greater than or equal to the passed `elem`.
+/// If all elements are less than `elem`, an empty slice will be returned.
+#[inline(always)]
 fn exponential_offset_ge<'a, T>(slice: &'a [T], elem: &T) -> &'a [T]
 where T: Ord,
 {
-    exponential_offset_ge_by(slice, |x| x.cmp(elem))
-}
+    // linear search the first 3 elements
+    if slice.len() == 0 || slice[0].cmp(elem) != Ordering::Less {
+        return &slice;
+    }
+    if slice.len() == 1 || slice[1].cmp(elem) != Ordering::Less {
+        return &slice[1..];
+    }
+    if slice.len() == 2 || slice[2].cmp(elem) != Ordering::Less {
+        return &slice[2..];
+    }
+    
+    // exponential search until the threshold has been passed
+    let mut index = 4;
+    while index < slice.len() && slice[index].cmp(elem) == Ordering::Less {
+        index *= 2;
+    }
 
-#[inline]
-fn exponential_offset_ge_by<T, F>(slice: &[T], f: F) -> &[T]
-where F: FnMut(&T) -> Ordering,
-{
-    match exponential_search_by(slice, f) {
-        Ok(pos) => &slice[pos..],
-        Err(pos) => &slice[pos..],
+    // binary search between the previous index (less than the threshold)
+    // and the current index (greater than the threshold) to find the exact index
+    let half_bound = index / 2;
+    let bound = cmp::min(index + 1, slice.len());
+
+    match slice[half_bound..bound].binary_search_by(|x| x.cmp(elem)) {
+        Ok(pos) => &slice[half_bound + pos..],
+        Err(pos) => &slice[half_bound + pos..],
     }
 }
 
-#[inline]
+/// Given `slice` with elements sorted in increasing order,
+/// and f() which transforms elements of `slice` to the same type as `b`,
+/// returns a subslice of `slice` starting at the first element that f(element) is
+/// greater than or equal to the passed `b`.
+/// If all elements are less than `b`, an empty slice will be returned.
+#[inline(always)]
 fn exponential_offset_ge_by_key<'a, T, B, F>(slice: &'a [T], b: &B, mut f: F) -> &'a [T]
 where F: FnMut(&T) -> B,
       B: Ord,
 {
-    exponential_offset_ge_by(slice, |x| f(x).cmp(b))
+    // linear search the first 3 elements
+    if slice.len() == 0 || f(&slice[0]).cmp(b) != Ordering::Less {
+        return &slice;
+    }
+    if slice.len() == 1 || f(&slice[1]).cmp(b) != Ordering::Less {
+        return &slice[1..];
+    }
+    if slice.len() == 2 || f(&slice[2]).cmp(b) != Ordering::Less {
+        return &slice[2..];
+    }
+
+    // exponential search until the threshold has been passed
+    let mut index = 4;
+    while index < slice.len() && f(&slice[index]).cmp(b) == Ordering::Less {
+        index *= 2;
+    }
+
+    // binary search between the previous index (less than the threshold)
+    // and the current index (greater than the threshold) to find the exact index
+    let half_bound = index / 2;
+    let bound = cmp::min(index + 1, slice.len());
+
+    match slice[half_bound..bound].binary_search_by(|x| f(&x).cmp(b)) {
+        Ok(pos) => &slice[half_bound + pos..],
+        Err(pos) => &slice[half_bound + pos..],
+    }
 }
 
 /// Represent a type that can produce a set operation on multiple [`Set`]s.
