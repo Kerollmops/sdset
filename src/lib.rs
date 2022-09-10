@@ -186,7 +186,7 @@ where F: FnMut(&T) -> B,
 /// returns a subslice of `slice` starting at the first element that is
 /// greater than or equal to the passed `elem`.
 /// If all elements are less than `elem`, an empty slice will be returned.
-#[inline]
+#[inline(always)]
 fn exponential_offset_ge<'a, T>(slice: &'a [T], elem: &T) -> &'a [T]
 where T: Ord,
 {
@@ -223,7 +223,7 @@ where T: Ord,
 /// returns a subslice of `slice` starting at the first element that f(element) is
 /// greater than or equal to the passed `b`.
 /// If all elements are less than `b`, an empty slice will be returned.
-#[inline]
+#[inline(always)]
 fn exponential_offset_ge_by_key<'a, T, B, F>(slice: &'a [T], b: &B, mut f: F) -> &'a [T]
 where F: FnMut(&T) -> B,
       B: Ord,
