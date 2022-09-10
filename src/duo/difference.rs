@@ -49,6 +49,7 @@ impl<'a, T: Ord> Difference<'a, T> {
             match minimum {
                 Some(min) if min == first => {
                     self.a = &self.a[1..];
+                    self.b = &self.b[1..];
                 },
                 Some(min) => {
                     let off = self.a.iter().take_while(|&x| x < min).count();
