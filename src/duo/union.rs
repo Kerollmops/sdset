@@ -47,12 +47,12 @@ impl<'a, T: Ord> Union<'a, T> {
         output.reserve(min_len)?;
 
         while !self.a.is_empty() && !self.b.is_empty() {
-            let a = &self.a[0];
-            let b = &self.b[0];
+            let first_a = &self.a[0];
+            let first_b = &self.b[0];
 
-            match a.cmp(&b) {
+            match first_a.cmp(&first_b) {
                  Ordering::Less => {
-                    let off = self.a.iter().take_while(|&x| x < b).count();
+                    let off = self.a.iter().take_while(|&x| x < first_b).count();
                     extend(output, &self.a[..off])?;
 
                     self.a = &self.a[off..];
@@ -65,7 +65,7 @@ impl<'a, T: Ord> Union<'a, T> {
                     self.b = &self.b[off..];
                  },
                  Ordering::Greater => {
-                    let off = self.b.iter().take_while(|&x| x < a).count();
+                    let off = self.b.iter().take_while(|&x| x < first_a).count();
                     extend(output, &self.b[..off])?;
 
                     self.b = &self.b[off..];
@@ -76,6 +76,14 @@ impl<'a, T: Ord> Union<'a, T> {
         extend(output, self.a)?;
         extend(output, self.b)?;
         Ok(())
+    }
+
+    fn iter(&self) -> UnionIter<'a, T>
+    {
+        UnionIter {
+            a: self.a,
+            b: self.b
+        }
     }
 }
 
@@ -95,70 +103,199 @@ impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for Union<'a, T> {
+    type Item = &'a T;
+    type IntoIter = UnionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a Union<'a, T> {
+    type Item = &'a T;
+    type IntoIter = UnionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct UnionIter<'a, T> {
+    a: &'a [T],
+    b: &'a [T],
+}
+
+impl<'a, T: Ord> Iterator for UnionIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.a.is_empty() {
+            let result = self.b.first();
+            if result.is_some() {
+                self.b = &self.b[1..];
+            }
+            return result;
+        }
+        if self.b.is_empty() {
+            let result = self.a.first();
+            if result.is_some() {
+                self.a = &self.a[1..];
+            }
+            return result;
+        }
+        let first_a = &self.a[0];
+        let first_b = &self.b[0];
+
+        match first_a.cmp(&first_b) {
+            Ordering::Less => {
+                self.a = &self.a[1..];
+                return Some(first_a);
+            },
+            Ordering::Equal => {
+                self.a = &self.a[1..];
+                self.b = &self.b[1..];
+                return Some(first_a);
+            },
+            Ordering::Greater => {
+                self.b = &self.b[1..];
+                return Some(first_b);
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    #[test]
-    fn union_two_slices_easy() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
+        #[test]
+        fn union_two_slices_easy() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
 
-        let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+            let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
 
-        assert_eq!(&union_[..], &[1, 2, 3, 4]);
+            assert_eq!(&union_[..], &[1, 2, 3, 4]);
+        }
+
+        #[test]
+        fn union_two_slices_second_empty() {
+            let a = &[1, 2, 3];
+            let b = &[];
+
+            let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+
+            assert_eq!(&union_[..], &[1, 2, 3]);
+        }
+
+        #[test]
+        fn union_two_slices_first_empty() {
+            let a = &[];
+            let b = &[2, 3, 4];
+
+            let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+
+            assert_eq!(&union_[..], &[2, 3, 4]);
+        }
+
+        #[test]
+        fn union_two_slices_same_elem() {
+            let a = &[1];
+            let b = &[1];
+
+            let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+
+            assert_eq!(&union_[..], &[1]);
+        }
+
+        quickcheck! {
+            fn qc_union(a: Vec<i32>, b: Vec<i32>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let mut a = a;
+                let mut b = b;
+
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
+
+                let x: SetBuf<i32> = Union { a: &a, b: &b }.into_set_buf();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let y = a.union(&b);
+                let y: Vec<_> = y.cloned().collect();
+
+                x.as_slice() == y.as_slice()
+            }
+        }
     }
 
-    #[test]
-    fn union_two_slices_second_empty() {
-        let a = &[1, 2, 3];
-        let b = &[];
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
 
-        let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+        #[test]
+        fn union_two_slices_easy() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
 
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
+            let union_: Vec<i32> = Union { a: a, b: b }.into_iter().cloned().collect();
 
-    #[test]
-    fn union_two_slices_first_empty() {
-        let a = &[];
-        let b = &[2, 3, 4];
+            assert_eq!(&union_[..], &[1, 2, 3, 4]);
+        }
 
-        let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+        #[test]
+        fn union_two_slices_second_empty() {
+            let a = &[1, 2, 3];
+            let b = &[];
 
-        assert_eq!(&union_[..], &[2, 3, 4]);
-    }
+            let union_: Vec<i32> = Union { a: a, b: b }.into_iter().cloned().collect();
 
-    #[test]
-    fn union_two_slices_same_elem() {
-        let a = &[1];
-        let b = &[1];
+            assert_eq!(&union_[..], &[1, 2, 3]);
+        }
 
-        let union_: SetBuf<i32> = Union { a: a, b: b }.into_set_buf();
+        #[test]
+        fn union_two_slices_first_empty() {
+            let a = &[];
+            let b = &[2, 3, 4];
 
-        assert_eq!(&union_[..], &[1]);
-    }
+            let union_: Vec<i32> = Union { a: a, b: b }.into_iter().cloned().collect();
 
-    quickcheck! {
-        fn qc_union(a: Vec<i32>, b: Vec<i32>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
+            assert_eq!(&union_[..], &[2, 3, 4]);
+        }
 
-            let mut a = a;
-            let mut b = b;
+        #[test]
+        fn union_two_slices_same_elem() {
+            let a = &[1];
+            let b = &[1];
 
-            sort_dedup_vec(&mut a);
-            sort_dedup_vec(&mut b);
+            let union_: Vec<i32> = Union { a: a, b: b }.into_iter().cloned().collect();
 
-            let x: SetBuf<i32> = Union { a: &a, b: &b }.into_set_buf();
+            assert_eq!(&union_[..], &[1]);
+        }
 
-            let a = BTreeSet::from_iter(a);
-            let b = BTreeSet::from_iter(b);
-            let y = a.union(&b);
-            let y: Vec<_> = y.cloned().collect();
+        quickcheck! {
+            fn qc_union(a: Vec<i32>, b: Vec<i32>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-            x.as_slice() == y.as_slice()
+                let mut a = a;
+                let mut b = b;
+
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
+
+                let x: Vec<i32> = Union { a: &a, b: &b }.into_iter().cloned().collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let y = a.union(&b);
+                let y: Vec<_> = y.cloned().collect();
+
+                x.as_slice() == y.as_slice()
+            }
         }
     }
 }

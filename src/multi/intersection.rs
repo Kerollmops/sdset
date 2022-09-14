@@ -1,4 +1,3 @@
-use std::cmp;
 use crate::set::{Set, vec_sets_into_slices};
 use crate::{SetOperation, Collection, exponential_offset_ge};
 
@@ -45,6 +44,7 @@ enum Equality<'a, T: 'a> {
     Equal(&'a T),
 }
 
+/// precondition: slices may not be empty && slices[i] may not be empty
 #[inline]
 fn test_equality<'a, T: Ord>(slices: &[&'a [T]]) -> Equality<'a, T> {
     let mut is_equal: usize = 1; // LLVM produced wasted instruction when this was bool
@@ -88,6 +88,13 @@ impl<'a, T: Ord> Intersection<'a, T> {
             }
         }
     }
+
+    fn iter(&self) -> IntersectionIter<'a, T>
+    {
+        IntersectionIter {
+            slices: self.slices.clone(),
+        }
+    }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Intersection<'a, T> {
@@ -106,82 +113,225 @@ impl<'a, T: Ord> SetOperation<&'a T> for Intersection<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for Intersection<'a, T> {
+    type Item = &'a T;
+    type IntoIter = IntersectionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        IntersectionIter {
+            slices: self.slices,
+        }
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a Intersection<'a, T> {
+    type Item = &'a T;
+    type IntoIter = IntersectionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct IntersectionIter<'a, T> {
+    slices: Vec<&'a [T]>,
+}
+
+impl<'a, T: Ord> Iterator for IntersectionIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.slices.is_empty() { return None; }
+
+        loop {
+            if self.slices.iter().any(|s| s.is_empty()) { return None; }
+            match test_equality(&self.slices) {
+                Equal(x) => {
+                    for slice in &mut self.slices {
+                        *slice = &slice[1..];
+                    }
+                    return Some(x);
+                },
+                NotEqual(max) => {
+                    for slice in &mut self.slices {
+                        *slice = exponential_offset_ge(slice, max);
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
-
-    #[test]
-    fn no_slice() {
-        let intersection_: SetBuf<i32> = Intersection { slices: vec![] }.into_set_buf();
-        assert_eq!(&intersection_[..], &[]);
-    }
-
-    #[test]
-    fn one_empty_slice() {
-        let a: &[i32] = &[];
-
-        let intersection_: SetBuf<i32> = Intersection { slices: vec![a] }.into_set_buf();
-        assert_eq!(&intersection_[..], &[]);
-    }
-
-    #[test]
-    fn one_slice() {
-        let a = &[1, 2, 3];
-
-        let intersection_: SetBuf<i32> = Intersection { slices: vec![a] }.into_set_buf();
-        assert_eq!(&intersection_[..], &[1, 2, 3]);
-    }
-
-    #[test]
-    fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-
-        let intersection_: SetBuf<i32> = Intersection { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&intersection_[..], &[2, 3]);
-    }
-
-    #[test]
-    fn three_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5];
-
-        let intersection_: SetBuf<i32> = Intersection { slices: vec![a, b, c] }.into_set_buf();
-        assert_eq!(&intersection_[..], &[3]);
-    }
-
-    quickcheck! {
-        fn qc_intersection(xss: Vec<Vec<i32>>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
-
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
-
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
+    
+        #[test]
+        fn no_slice() {
+            let intersection_: SetBuf<i32> = Intersection { slices: vec![] }.into_set_buf();
+            assert_eq!(&intersection_[..], &[]);
+        }
+    
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
+    
+            let intersection_: SetBuf<i32> = Intersection { slices: vec![a] }.into_set_buf();
+            assert_eq!(&intersection_[..], &[]);
+        }
+    
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
+    
+            let intersection_: SetBuf<i32> = Intersection { slices: vec![a] }.into_set_buf();
+            assert_eq!(&intersection_[..], &[1, 2, 3]);
+        }
+    
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+    
+            let intersection_: SetBuf<i32> = Intersection { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&intersection_[..], &[2, 3]);
+        }
+    
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5];
+    
+            let intersection_: SetBuf<i32> = Intersection { slices: vec![a, b, c] }.into_set_buf();
+            assert_eq!(&intersection_[..], &[3]);
+        }
+    
+        quickcheck! {
+            fn qc_intersection(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+    
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+    
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+    
+                let x: SetBuf<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Intersection { slices: xss }.into_set_buf()
+                };
+    
+                let mut xss = xss.into_iter();
+                let mut y = match xss.next() {
+                    Some(xs) => BTreeSet::from_iter(xs),
+                    None => BTreeSet::new(),
+                };
+    
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.intersection(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+    
+                x.as_slice() == y.as_slice()
             }
+        }
+    }
 
-            let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Intersection { slices: xss }.into_set_buf()
-            };
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
+    
+        #[test]
+        fn no_slice() {
+            let intersection = Intersection { slices: vec![] };
+            let inter_ref: Vec<i32> = intersection.iter().cloned().collect();
+            assert_eq!(&inter_ref[..], &[]);
+            let inter_own: Vec<i32> = intersection.into_iter().cloned().collect();
+            assert_eq!(&inter_own[..], &[]);
+        }
+    
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
+    
+            let intersection = Intersection { slices: vec![a] };
+            let inter_ref: Vec<i32> = intersection.iter().cloned().collect();
+            assert_eq!(&inter_ref[..], &[]);
+            let inter_own: Vec<i32> = intersection.into_iter().cloned().collect();
+            assert_eq!(&inter_own[..], &[]);
+        }
+    
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
 
-            let mut xss = xss.into_iter();
-            let mut y = match xss.next() {
-                Some(xs) => BTreeSet::from_iter(xs),
-                None => BTreeSet::new(),
-            };
-
-            for v in xss {
-                let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.intersection(&x).cloned().collect();
+            let intersection = Intersection { slices: vec![a] };
+            let inter_ref: Vec<i32> = intersection.iter().cloned().collect();
+            assert_eq!(&inter_ref[..], &[1, 2, 3]);
+            let inter_own: Vec<i32> = intersection.into_iter().cloned().collect();
+            assert_eq!(&inter_own[..], &[1, 2, 3]);
+        }
+    
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+    
+            let intersection = Intersection { slices: vec![a, b] };
+            let inter_ref: Vec<i32> = intersection.iter().cloned().collect();
+            assert_eq!(&inter_ref[..], &[2, 3]);
+            let inter_own: Vec<i32> = intersection.into_iter().cloned().collect();
+            assert_eq!(&inter_own[..], &[2, 3]);
+        }
+    
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5];
+    
+            let intersection = Intersection { slices: vec![a, b, c] };
+            let inter_ref: Vec<i32> = intersection.iter().cloned().collect();
+            assert_eq!(&inter_ref[..], &[3]);
+            let inter_own: Vec<i32> = intersection.into_iter().cloned().collect();
+            assert_eq!(&inter_own[..], &[3]);
+        }
+    
+        quickcheck! {
+            fn qc_intersection(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+    
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+    
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+    
+                let x: Vec<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Intersection { slices: xss }.into_iter().cloned().collect()
+                };
+    
+                let mut xss = xss.into_iter();
+                let mut y = match xss.next() {
+                    Some(xs) => BTreeSet::from_iter(xs),
+                    None => BTreeSet::new(),
+                };
+    
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.intersection(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+    
+                x.as_slice() == y.as_slice()
             }
-            let y: Vec<_> = y.into_iter().collect();
-
-            x.as_slice() == y.as_slice()
         }
     }
 }

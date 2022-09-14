@@ -74,6 +74,13 @@ impl<'a, T: Ord> SymmetricDifference<'a, T> {
         }
         Ok(())
     }
+
+    fn iter(&self) -> SymmetricDifferenceIter<'a, T>
+    {
+        SymmetricDifferenceIter {
+            slices: self.slices.clone(),
+        }
+    }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for SymmetricDifference<'a, T> {
@@ -92,36 +99,129 @@ impl<'a, T: Ord> SetOperation<&'a T> for SymmetricDifference<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for SymmetricDifference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = SymmetricDifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        SymmetricDifferenceIter {
+            slices: self.slices,
+        }
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a SymmetricDifference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = SymmetricDifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct SymmetricDifferenceIter<'a, T> {
+    slices: Vec<&'a [T]>,
+}
+
+impl<'a, T: Ord> Iterator for SymmetricDifferenceIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match two_minimums(&self.slices) {
+                Two((i, f), (_, s)) => {
+                    if f != s {
+                        let result = &self.slices[i][0];
+                        self.slices[i] = &self.slices[i][1..];
+                        return Some(result);
+                    } else {
+                        let mut count = 0;
+                        for slice in self.slices.iter_mut() {
+                            if slice.first() == Some(f) {
+                                count += 1;
+                                *slice = &slice[1..];
+                            }
+                        }
+                        // if count is odd
+                        if count % 2 != 0 {
+                            return Some(f);
+                        }
+                    }
+                },
+                One((i, _)) => {
+                    let result = &self.slices[i][0];
+                    self.slices[i] = &self.slices[i][1..];
+                    return Some(result);
+                },
+                Nothing => { return None; },
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
-
-    quickcheck! {
-        fn qc_symmetric_difference(xss: Vec<Vec<i32>>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
-
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
-
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
+    
+        quickcheck! {
+            fn qc_symmetric_difference(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+    
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+    
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+    
+                let x: SetBuf<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    SymmetricDifference { slices: xss }.into_set_buf()
+                };
+    
+                let mut y = BTreeSet::new();
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.symmetric_difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+    
+                x.as_slice() == y.as_slice()
             }
+        }
+    }
 
-            let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                SymmetricDifference { slices: xss }.into_set_buf()
-            };
-
-            let mut y = BTreeSet::new();
-            for v in xss {
-                let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.symmetric_difference(&x).cloned().collect();
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
+    
+        quickcheck! {
+            fn qc_symmetric_difference(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+    
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+    
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+    
+                let x: Vec<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    SymmetricDifference { slices: xss }.into_iter().cloned().collect()
+                };
+    
+                let mut y = BTreeSet::new();
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.symmetric_difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+    
+                x.as_slice() == y.as_slice()
             }
-            let y: Vec<_> = y.into_iter().collect();
-
-            x.as_slice() == y.as_slice()
         }
     }
 }

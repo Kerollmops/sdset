@@ -37,10 +37,13 @@ use crate::{exponential_offset_ge_by_key, SetOperation, Collection};
 /// # try_main().unwrap();
 /// ```
 #[derive(Copy, Clone)]
-pub struct DifferenceByKey<'a, T: 'a, U: 'a, F, G, K>
-where F: Fn(&T) -> K,
-      G: Fn(&U) -> K,
-      K: Ord,
+pub struct DifferenceByKey<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
 {
     a: &'a [T],
     b: &'a [U],
@@ -49,9 +52,12 @@ where F: Fn(&T) -> K,
 }
 
 impl<'a, T, U, F, G, K> DifferenceByKey<'a, T, U, F, G, K>
-where F: Fn(&T) -> K,
-      G: Fn(&U) -> K,
-      K: Ord,
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
 {
     /// Construct one with slices checked to be sorted and deduplicated.
     pub fn new(a: &'a Set<T>, b: &'a Set<U>, f: F, g: G) -> Self {
@@ -73,13 +79,14 @@ where F: Fn(&T) -> K,
     where C: Collection<X>,
           E: Fn(&mut C, &'a [T]) -> Result<(), C::Error>,
     {
-        while let Some(first) = self.a.first().map(|x| (self.f)(x)) {
-            self.b = exponential_offset_ge_by_key(self.b, &first, &self.g);
+        while let Some(first_a) = self.a.first().map(|x| (self.f)(x)) {
+            self.b = exponential_offset_ge_by_key(self.b, &first_a, &self.g);
 
             match self.b.first().map(|x| (self.g)(x)) {
                 Some(min) => {
-                    if min == first {
+                    if min == first_a {
                         self.a = &self.a[1..];
+                        // cannot advance b since we support duplicate relations
                     } else {
                         let off = self.a.iter().take_while(|&x| (self.f)(x) < min).count();
                         extend(output, &self.a[..off])?;
@@ -94,6 +101,16 @@ where F: Fn(&T) -> K,
             }
         }
         Ok(())
+    }
+
+    fn iter(&'a self) -> DifferenceByKeyIter<'a, T, U, F, G, K>
+    {
+        DifferenceByKeyIter {
+            a: self.a,
+            b: self.b,
+            f: &self.f,
+            g: &self.g
+        }
     }
 }
 
@@ -122,90 +139,327 @@ where F: Fn(&T) -> K,
     }
 }
 
+// This version of IntoIterator takes references to the functions (f/g).
+// The separate structs are required to not break the public API which takes the functions
+//   by value instead of by reference, and doesn't require them to implement Copy/Clone.
+impl<'a, T, U, F, G, K> IntoIterator for &'a DifferenceByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    type Item = &'a T;
+    type IntoIter = DifferenceByKeyIter<'a, T, U, F, G, K>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct DifferenceByKeyIter<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    a: &'a [T],
+    b: &'a [U],
+    f: &'a F,
+    g: &'a G,
+}
+
+impl<'a, T, U, F, G, K> Iterator for DifferenceByKeyIter<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.a.is_empty() {
+                return None;
+            }
+            let first_a = (self.f)(&self.a[0]);
+            self.b = exponential_offset_ge_by_key(self.b, &first_a, &self.g);
+            if self.b.is_empty() {
+                let result = &self.a[0];
+                self.a = &self.a[1..];
+                return Some(result);
+            }
+            if first_a == (self.g)(&self.b[0]) {
+                self.a = &self.a[1..];
+                // cannot advance b since we support duplicate relations
+                continue;
+            } else { // b > a
+                let result = &self.a[0];
+                self.a = &self.a[1..];
+                return Some(result);
+            }
+        }
+    }
+}
+
+// This version of IntoIterator moves the contents of self into the iterator.
+// Therefore the iterator owns the functions (f/g).
+// The separate structs are required to not break the public API which takes the functions
+//   by value instead of by reference, and doesn't require them to implement Copy/Clone.
+impl<'a, T, U, F, G, K> IntoIterator for DifferenceByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K + 'a,
+      G: Fn(&U) -> K + 'a,
+      K: Ord + 'a,
+{
+    type Item = &'a T;
+    type IntoIter = DifferenceByKeyIterOwning<'a, T, U, F, G, K>;
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            a: self.a,
+            b: self.b,
+            f: self.f,
+            g: self.g
+        }
+    }
+}
+
+pub struct DifferenceByKeyIterOwning<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    a: &'a [T],
+    b: &'a [U],
+    f: F,
+    g: G,
+}
+
+impl<'a, T, U, F, G, K> Iterator for DifferenceByKeyIterOwning<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.a.is_empty() {
+                return None;
+            }
+            let first_a = (self.f)(&self.a[0]);
+            self.b = exponential_offset_ge_by_key(self.b, &first_a, &self.g);
+            if self.b.is_empty() {
+                let result = &self.a[0];
+                self.a = &self.a[1..];
+                return Some(result);
+            }
+            if first_a == (self.g)(&self.b[0]) {
+                self.a = &self.a[1..];
+                // cannot advance b since we support duplicate relations
+                continue;
+            } else { // b > a
+                let result = &self.a[0];
+                self.a = &self.a[1..];
+                return Some(result);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    struct Foo {
-        a: i32,
-        b: i8,
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        struct Foo {
+            a: i32,
+            b: i8,
+        }
+
+        #[test]
+        fn difference_empty_no_duplicates() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 3, b: 10 },
+                Foo{ a: 4, b: 11 },
+                Foo{ a: 5, b: 12 },
+            ]);
+            let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+
+            let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+
+            assert!(difference.is_empty());
+        }
+
+        #[test]
+        fn difference_empty_duplicate_relations() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 6 },
+                Foo{ a: 1, b: 7 },
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 2, b: 10 },
+            ]);
+            let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+
+            let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+
+            assert!(difference.is_empty());
+        }
+
+        #[test]
+        fn difference_non_empty_duplicate_relations() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 6 },
+                Foo{ a: 1, b: 7 },
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 2, b: 10 },
+            ]);
+            let b = Set::new(&[1, 3, 4, 5]).unwrap();
+
+            let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+
+            assert_eq!(difference.as_slice(), &[
+                Foo{ a: 2, b: 9  },
+                Foo{ a: 2, b: 10 },
+            ][..]);
+        }
+
+        quickcheck! {
+            fn qc_difference(a: Vec<i32>, b: Vec<i64>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let mut a = a;
+                let mut b = b;
+
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
+
+                let x: SetBuf<i32> = {
+                    let difference = DifferenceByKey { a: &a, b: &b, f: |&x| x, g: |&x| x as i32 };
+                    difference.into_set_buf()
+                };
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b.into_iter().map(|x| x as i32));
+                let y = a.difference(&b);
+                let y: Vec<_> = y.cloned().collect();
+
+                x.as_slice() == y.as_slice()
+            }
+        }
     }
 
-    #[test]
-    fn difference_empty_no_duplicates() {
-        let a = Set::new_unchecked(&[
-            Foo{ a: 1, b: 8 },
-            Foo{ a: 2, b: 9 },
-            Foo{ a: 3, b: 10 },
-            Foo{ a: 4, b: 11 },
-            Foo{ a: 5, b: 12 },
-        ]);
-        let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
 
-        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        struct Foo {
+            a: i32,
+            b: i8,
+        }
 
-        assert!(difference.is_empty());
-    }
+        #[test]
+        fn difference_empty_no_duplicates() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 3, b: 10 },
+                Foo{ a: 4, b: 11 },
+                Foo{ a: 5, b: 12 },
+            ]);
+            let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+            let difference = DifferenceByKey::new(a, b, |x| x.a, |&x| x);
 
-    #[test]
-    fn difference_empty_duplicate_relations() {
-        let a = Set::new_unchecked(&[
-            Foo{ a: 1, b: 6 },
-            Foo{ a: 1, b: 7 },
-            Foo{ a: 1, b: 8 },
-            Foo{ a: 2, b: 9 },
-            Foo{ a: 2, b: 10 },
-        ]);
-        let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert!(diff_ref.is_empty());
 
-        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert!(diff_own.is_empty());
+        }
 
-        assert!(difference.is_empty());
-    }
+        #[test]
+        fn difference_empty_duplicate_relations() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 6 },
+                Foo{ a: 1, b: 7 },
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 2, b: 10 },
+            ]);
+            let b = Set::new(&[1, 2, 3, 4, 5]).unwrap();
+            
+            let difference = DifferenceByKey::new(a, b, |x| x.a, |&x| x);
 
-    #[test]
-    fn difference_non_empty_duplicate_relations() {
-        let a = Set::new_unchecked(&[
-            Foo{ a: 1, b: 6 },
-            Foo{ a: 1, b: 7 },
-            Foo{ a: 1, b: 8 },
-            Foo{ a: 2, b: 9 },
-            Foo{ a: 2, b: 10 },
-        ]);
-        let b = Set::new(&[1, 3, 4, 5]).unwrap();
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert!(diff_ref.is_empty());
 
-        let difference: SetBuf<Foo> = DifferenceByKey::new(a, b, |x| x.a, |&x| x).into_set_buf();
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert!(diff_own.is_empty());
+        }
 
-        assert_eq!(difference.as_slice(), &[
-            Foo{ a: 2, b: 9  },
-            Foo{ a: 2, b: 10 },
-        ][..]);
-    }
+        #[test]
+        fn difference_non_empty_duplicate_relations() {
+            let a = Set::new_unchecked(&[
+                Foo{ a: 1, b: 6 },
+                Foo{ a: 1, b: 7 },
+                Foo{ a: 1, b: 8 },
+                Foo{ a: 2, b: 9 },
+                Foo{ a: 2, b: 10 },
+            ]);
+            let b = Set::new(&[1, 3, 4, 5]).unwrap();
 
-    quickcheck! {
-        fn qc_difference(a: Vec<i32>, b: Vec<i64>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
+            let difference = DifferenceByKey::new(a, b, |x| x.a, |&x| x);
 
-            let mut a = a;
-            let mut b = b;
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(diff_ref.as_slice(), &[
+                Foo{ a: 2, b: 9  },
+                Foo{ a: 2, b: 10 },
+            ][..]);
 
-            sort_dedup_vec(&mut a);
-            sort_dedup_vec(&mut b);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(diff_own.as_slice(), &[
+                Foo{ a: 2, b: 9  },
+                Foo{ a: 2, b: 10 },
+            ][..]);
+        }
 
-            let x: SetBuf<i32> = {
-                let difference = DifferenceByKey { a: &a, b: &b, f: |&x| x, g: |&x| x as i32 };
-                difference.into_set_buf()
-            };
+        quickcheck! {
+            fn qc_difference(a: Vec<i32>, b: Vec<i64>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-            let a = BTreeSet::from_iter(a);
-            let b = BTreeSet::from_iter(b.into_iter().map(|x| x as i32));
-            let y = a.difference(&b);
-            let y: Vec<_> = y.cloned().collect();
+                let mut a = a;
+                let mut b = b;
 
-            x.as_slice() == y.as_slice()
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
+
+                let x: Vec<i32> = {
+                    let difference = DifferenceByKey { a: &a, b: &b, f: |&x| x, g: |&x| x as i32 };
+                    difference.into_iter().cloned().collect()
+                };
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b.into_iter().map(|x| x as i32));
+                let y = a.difference(&b);
+                let y: Vec<_> = y.cloned().collect();
+
+                x.as_slice() == y.as_slice()
+            }
         }
     }
 }
