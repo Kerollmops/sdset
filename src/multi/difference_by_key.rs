@@ -112,6 +112,16 @@ where F: Fn(&T) -> K,
         }
         Ok(())
     }
+    
+    fn iter(&'a self) -> DifferenceByKeyIter<'a, T, U, F, G, K>
+    {
+        DifferenceByKeyIter {
+            base: self.base,
+            others: self.others.clone(),
+            f: &self.f,
+            g: &self.g,
+        }
+    }
 }
 
 impl<'a, T, U, F, G, K> SetOperation<T> for DifferenceByKey<'a, T, U, F, G, K>
@@ -139,100 +149,366 @@ where F: Fn(&T) -> K,
     }
 }
 
+// This version of IntoIterator takes references to the functions (f/g).
+// The separate structs are required to not break the public API which takes the functions
+//   by value instead of by reference, and doesn't require them to implement Copy/Clone.
+impl<'a, T, U, F, G, K> IntoIterator for &'a DifferenceByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    type Item = &'a T;
+    type IntoIter = DifferenceByKeyIter<'a, T, U, F, G, K>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct DifferenceByKeyIter<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    //slices: Vec<&'a [T]>,
+    base: &'a [T],
+    others: Vec<&'a [U]>,
+    f: &'a F,
+    g: &'a G,
+}
+
+impl<'a, T, U, F, G, K> Iterator for DifferenceByKeyIter<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.base.is_empty() {
+                return None;
+            }
+            let first_base = (self.f)(&self.base[0]);
+            let mut minimum = None;
+            for slice in self.others.iter_mut() {
+                *slice = exponential_offset_ge_by_key(slice, &first_base, &self.g);
+                if !slice.is_empty() {
+                    let first_other = (self.g)(&slice[0]);
+                    match minimum {
+                        Some(min) => {
+                            minimum = Some(cmp::min(min, first_other))
+                        },
+                        None => {
+                            minimum = Some(first_other)
+                        }
+                    }
+                }
+            }
+
+            match minimum {
+                Some(min) if min == first_base => {
+                    self.base = &self.base[1..];
+                },
+                _ => {
+                    let result = &self.base[0];
+                    self.base = &self.base[1..];
+                    return Some(result);
+                },
+            }
+        }
+    }
+}
+
+// This version of IntoIterator moves the contents of self into the iterator.
+// Therefore the iterator owns the functions (f/g).
+// The separate structs are required to not break the public API which takes the functions
+//   by value instead of by reference, and doesn't require them to implement Copy/Clone.
+impl<'a, T, U, F, G, K> IntoIterator for DifferenceByKey<'a, T, U, F, G, K>
+where F: Fn(&T) -> K,
+      G: Fn(&U) -> K,
+      K: Ord,
+{
+    type Item = &'a T;
+    type IntoIter = DifferenceByKeyIterOwning<'a, T, U, F, G, K>;
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            base: self.base,
+            others: self.others,
+            f: self.f,
+            g: self.g,
+        }
+    }
+}
+
+pub struct DifferenceByKeyIterOwning<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    base: &'a [T],
+    others: Vec<&'a [U]>,
+    f: F,
+    g: G,
+}
+
+impl<'a, T, U, F, G, K> Iterator for DifferenceByKeyIterOwning<'a, T, U, F, G, K>
+where
+    T: 'a,
+    U: 'a,
+    F: Fn(&T) -> K,
+    G: Fn(&U) -> K,
+    K: Ord,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.base.is_empty() {
+                return None;
+            }
+            let first_base = (self.f)(&self.base[0]);
+            let mut minimum = None;
+            for slice in self.others.iter_mut() {
+                *slice = exponential_offset_ge_by_key(slice, &first_base, &self.g);
+                if !slice.is_empty() {
+                    let first_other = (self.g)(&slice[0]);
+                    match minimum {
+                        Some(min) => {
+                            minimum = Some(cmp::min(min, first_other))
+                        },
+                        None => {
+                            minimum = Some(first_other)
+                        }
+                    }
+                }
+            }
+
+            match minimum {
+                Some(min) if min == first_base => {
+                    self.base = &self.base[1..];
+                },
+                _ => {
+                    let result = &self.base[0];
+                    self.base = &self.base[1..];
+                    return Some(result);
+                },
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-    struct Foo {
-        a: i32,
-        b: i8,
-    }
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        struct Foo {
+            a: i32,
+            b: i8,
+        }
 
-    impl Foo {
-        fn new(a: i32) -> Foo {
-            Foo { a, b: 0 }
+        impl Foo {
+            fn new(a: i32) -> Foo {
+                Foo { a, b: 0 }
+            }
+        }
+
+        #[test]
+        fn one_empty_slice() {
+            let a: &[Foo] = &[];
+
+            let op = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            assert_eq!(&res[..], &[]);
+        }
+
+        #[test]
+        fn one_slice() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+
+            let op = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            assert_eq!(&res[..], &[Foo::new(1), Foo::new(2), Foo::new(3)]);
+        }
+
+        #[test]
+        fn two_slices() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+            let b = &[2, 4];
+
+            let op = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            assert_eq!(&res[..], &[Foo::new(1), Foo::new(3)]);
+        }
+
+        #[test]
+        fn two_slices_special_case() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+            let b = &[3];
+
+            let op = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            assert_eq!(&res[..], &[Foo::new(1), Foo::new(2)]);
+        }
+
+        #[test]
+        fn three_slices() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3), Foo::new(6), Foo::new(7)];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5, 7];
+
+            let op = DifferenceByKey { base: a, others: vec![b, c], f: |x| x.a, g: |&x| x };
+            let res: SetBuf<Foo> = op.into_set_buf();
+            assert_eq!(&res[..], &[Foo::new(1), Foo::new(6)]);
+        }
+
+        quickcheck! {
+            fn qc_difference(base: Vec<i32>, xss: Vec<Vec<i64>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let mut base = base;
+                let mut xss = xss;
+
+                sort_dedup_vec(&mut base);
+
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: SetBuf<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    DifferenceByKey { base: &base, others: xss, f: |&x| x, g: |&x| x as i32 }.into_set_buf()
+                };
+
+                let mut y = BTreeSet::from_iter(base);
+
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.into_iter().map(|x| x as i32));
+                    y = y.difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
+            }
         }
     }
 
-    #[test]
-    fn one_empty_slice() {
-        let a: &[Foo] = &[];
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
 
-        let op = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
-        let res: SetBuf<Foo> = op.into_set_buf();
-        assert_eq!(&res[..], &[]);
-    }
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        struct Foo {
+            a: i32,
+            b: i8,
+        }
 
-    #[test]
-    fn one_slice() {
-        let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
-
-        let op = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
-        let res: SetBuf<Foo> = op.into_set_buf();
-        assert_eq!(&res[..], &[Foo::new(1), Foo::new(2), Foo::new(3)]);
-    }
-
-    #[test]
-    fn two_slices() {
-        let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
-        let b = &[2, 4];
-
-        let op = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
-        let res: SetBuf<Foo> = op.into_set_buf();
-        assert_eq!(&res[..], &[Foo::new(1), Foo::new(3)]);
-    }
-
-    #[test]
-    fn two_slices_special_case() {
-        let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
-        let b = &[3];
-
-        let op = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
-        let res: SetBuf<Foo> = op.into_set_buf();
-        assert_eq!(&res[..], &[Foo::new(1), Foo::new(2)]);
-    }
-
-    #[test]
-    fn three_slices() {
-        let a = &[Foo::new(1), Foo::new(2), Foo::new(3), Foo::new(6), Foo::new(7)];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5, 7];
-
-        let op = DifferenceByKey { base: a, others: vec![b, c], f: |x| x.a, g: |&x| x };
-        let res: SetBuf<Foo> = op.into_set_buf();
-        assert_eq!(&res[..], &[Foo::new(1), Foo::new(6)]);
-    }
-
-    quickcheck! {
-        fn qc_difference(base: Vec<i32>, xss: Vec<Vec<i64>>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
-
-            let mut base = base;
-            let mut xss = xss;
-
-            sort_dedup_vec(&mut base);
-
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
+        impl Foo {
+            fn new(a: i32) -> Foo {
+                Foo { a, b: 0 }
             }
+        }
 
-            let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                DifferenceByKey { base: &base, others: xss, f: |&x| x, g: |&x| x as i32 }.into_set_buf()
-            };
+        #[test]
+        fn one_empty_slice() {
+            let a: &[Foo] = &[];
 
-            let mut y = BTreeSet::from_iter(base);
+            let difference = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[]);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[]);
+        }
 
-            for v in xss {
-                let x = BTreeSet::from_iter(v.into_iter().map(|x| x as i32));
-                y = y.difference(&x).cloned().collect();
+        #[test]
+        fn one_slice() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+
+            let difference = DifferenceByKey { base: a, others: vec![], f: |x| x.a, g: |&x| x };
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[Foo::new(1), Foo::new(2), Foo::new(3)]);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[Foo::new(1), Foo::new(2), Foo::new(3)]);
+        }
+
+        #[test]
+        fn two_slices() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+            let b = &[2, 4];
+
+            let difference = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[Foo::new(1), Foo::new(3)]);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[Foo::new(1), Foo::new(3)]);
+        }
+
+        #[test]
+        fn two_slices_special_case() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3)];
+            let b = &[3];
+
+            let difference = DifferenceByKey { base: a, others: vec![b], f: |x| x.a, g: |&x| x };
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[Foo::new(1), Foo::new(2)]);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[Foo::new(1), Foo::new(2)]);
+        }
+
+        #[test]
+        fn three_slices() {
+            let a = &[Foo::new(1), Foo::new(2), Foo::new(3), Foo::new(6), Foo::new(7)];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5, 7];
+
+            let difference = DifferenceByKey { base: a, others: vec![b, c], f: |x| x.a, g: |&x| x };
+            let diff_ref: Vec<Foo> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[Foo::new(1), Foo::new(6)]);
+            let diff_own: Vec<Foo> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[Foo::new(1), Foo::new(6)]);
+        }
+
+        quickcheck! {
+            fn qc_difference(base: Vec<i32>, xss: Vec<Vec<i64>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let mut base = base;
+                let mut xss = xss;
+
+                sort_dedup_vec(&mut base);
+
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: Vec<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    DifferenceByKey { base: &base, others: xss, f: |&x| x, g: |&x| x as i32 }.into_iter().cloned().collect()
+                };
+
+                let mut y = BTreeSet::from_iter(base);
+
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.into_iter().map(|x| x as i32));
+                    y = y.difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
             }
-            let y: Vec<_> = y.into_iter().collect();
-
-            x.as_slice() == y.as_slice()
         }
     }
 }

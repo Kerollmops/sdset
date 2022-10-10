@@ -64,18 +64,26 @@ impl<'a, T: Ord> SymmetricDifference<'a, T> {
                         },
                     }
                 },
-                (None, Some(_)) => {
-                    extend(output, self.b)?;
-                    break;
-                },
                 (Some(_), None) => {
                     extend(output, self.a)?;
+                    break;
+                },
+                (None, Some(_)) => {
+                    extend(output, self.b)?;
                     break;
                 },
                 (None, None) => break,
             }
         }
         Ok(())
+    }
+
+    fn iter(&self) -> SymmetricDifferenceIter<'a, T>
+    {
+        SymmetricDifferenceIter {
+            a: self.a,
+            b: self.b
+        }
     }
 }
 
@@ -95,30 +103,116 @@ impl<'a, T: Ord> SetOperation<&'a T> for SymmetricDifference<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for SymmetricDifference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = SymmetricDifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a SymmetricDifference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = SymmetricDifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct SymmetricDifferenceIter<'a, T> {
+    a: &'a [T],
+    b: &'a [T],
+}
+
+impl<'a, T: Ord> Iterator for SymmetricDifferenceIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match (self.a.first(), self.b.first()) {
+                (Some(first_a), Some(first_b)) => {
+                    match first_a.cmp(first_b) {
+                        Ordering::Less => {
+                            self.a = &self.a[1..];
+                            return Some(first_a);
+                        },
+                        Ordering::Equal => {
+                            let off = self.a.iter().zip(self.b.iter()).take_while(|(a, b)| a == b).count();
+                            self.a = &self.a[off..];
+                            self.b = &self.b[off..];
+                        },
+                        Ordering::Greater => {
+                            self.b = &self.b[1..];
+                            return Some(first_b);
+                        },
+                    }
+                },
+                (Some(first_a), None) => {
+                    self.a = &self.a[1..];
+                    return Some(first_a);
+                },
+                (None, Some(first_b)) => {
+                    self.b = &self.b[1..];
+                    return Some(first_b);
+                },
+                (None, None) => return None,
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    quickcheck! {
-        fn qc_symmetric_difference(a: Vec<i32>, b: Vec<i32>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
+        quickcheck! {
+            fn qc_symmetric_difference(a: Vec<i32>, b: Vec<i32>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-            let mut a = a;
-            let mut b = b;
+                let mut a = a;
+                let mut b = b;
 
-            sort_dedup_vec(&mut a);
-            sort_dedup_vec(&mut b);
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
 
-            let x: SetBuf<i32> = SymmetricDifference { a: &a, b: &b }.into_set_buf();
+                let x: SetBuf<i32> = SymmetricDifference { a: &a, b: &b }.into_set_buf();
 
-            let a = BTreeSet::from_iter(a);
-            let b = BTreeSet::from_iter(b);
-            let y = a.symmetric_difference(&b);
-            let y: Vec<_> = y.cloned().collect();
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let y = a.symmetric_difference(&b);
+                let y: Vec<_> = y.cloned().collect();
 
-            x.as_slice() == y.as_slice()
+                x.as_slice() == y.as_slice()
+            }
+        }
+    }
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
+
+        quickcheck! {
+            fn qc_symmetric_difference(a: Vec<i32>, b: Vec<i32>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                let mut a = a;
+                let mut b = b;
+
+                sort_dedup_vec(&mut a);
+                sort_dedup_vec(&mut b);
+
+                let x: Vec<i32> = SymmetricDifference { a: &a, b: &b }.into_iter().cloned().collect();
+
+                let a = BTreeSet::from_iter(a);
+                let b = BTreeSet::from_iter(b);
+                let y = a.symmetric_difference(&b);
+                let y: Vec<_> = y.cloned().collect();
+
+                x.as_slice() == y.as_slice()
+            }
         }
     }
 }

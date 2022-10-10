@@ -79,6 +79,13 @@ impl<'a, T: Ord> Difference<'a, T> {
         }
         Ok(())
     }
+
+    fn iter(&self) -> DifferenceIter<'a, T>
+    {
+        DifferenceIter {
+            slices: self.slices.clone(),
+        }
+    }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Difference<'a, T> {
@@ -97,91 +104,259 @@ impl<'a, T: Ord> SetOperation<&'a T> for Difference<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for Difference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = DifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        DifferenceIter {
+            slices: self.slices,
+        }
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a Difference<'a, T> {
+    type Item = &'a T;
+    type IntoIter = DifferenceIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct DifferenceIter<'a, T> {
+    slices: Vec<&'a [T]>,
+}
+
+impl<'a, T: Ord> Iterator for DifferenceIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (base, others) = match self.slices.split_first_mut() {
+            Some(split) => split,
+            None => return None,
+        };
+
+        loop {
+            if base.is_empty() {
+                return None;
+            }
+            while let Some(first) = base.first() {
+                let mut minimum = None;
+                for slice in others.iter_mut() {
+                    *slice = exponential_offset_ge(slice, first);
+                    minimum = match (minimum, slice.first()) {
+                        (Some(min), Some(first)) => Some(cmp::min(min, first)),
+                        (None, Some(first)) => Some(first),
+                        (min, _) => min,
+                    };
+                }
+    
+                match minimum {
+                    Some(min) if min == first => {
+                        *base = &base[1..];
+                    },
+                    _ => {
+                        *base = &base[1..];
+                        return Some(first);
+                    },
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    #[test]
-    fn no_slice() {
-        let difference_: SetBuf<i32> = Difference { slices: vec![] }.into_set_buf();
-        assert_eq!(&difference_[..], &[]);
-    }
+        #[test]
+        fn no_slice() {
+            let difference_: SetBuf<i32> = Difference { slices: vec![] }.into_set_buf();
+            assert_eq!(&difference_[..], &[]);
+        }
 
-    #[test]
-    fn one_empty_slice() {
-        let a: &[i32] = &[];
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
-        assert_eq!(&difference_[..], &[]);
-    }
+            let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
+            assert_eq!(&difference_[..], &[]);
+        }
 
-    #[test]
-    fn one_slice() {
-        let a = &[1, 2, 3];
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
-        assert_eq!(&difference_[..], &[1, 2, 3]);
-    }
+            let difference_: SetBuf<i32> = Difference { slices: vec![a] }.into_set_buf();
+            assert_eq!(&difference_[..], &[1, 2, 3]);
+        }
 
-    #[test]
-    fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 4];
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 4];
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&difference_[..], &[1, 3]);
-    }
+            let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&difference_[..], &[1, 3]);
+        }
 
-    #[test]
-    fn two_slices_special_case() {
-        let a = &[1, 2, 3];
-        let b = &[3];
+        #[test]
+        fn two_slices_special_case() {
+            let a = &[1, 2, 3];
+            let b = &[3];
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&difference_[..], &[1, 2]);
-    }
+            let difference_: SetBuf<i32> = Difference { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&difference_[..], &[1, 2]);
+        }
 
-    #[test]
-    fn three_slices() {
-        let a = &[1, 2, 3, 6, 7];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5, 7];
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3, 6, 7];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5, 7];
 
-        let difference_: SetBuf<i32> = Difference { slices: vec![a, b, c] }.into_set_buf();
-        assert_eq!(&difference_[..], &[1, 6]);
-    }
+            let difference_: SetBuf<i32> = Difference { slices: vec![a, b, c] }.into_set_buf();
+            assert_eq!(&difference_[..], &[1, 6]);
+        }
 
-    quickcheck! {
-        fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
+        quickcheck! {
+            fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
 
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: SetBuf<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Difference { slices: xss }.into_set_buf()
+                };
+
+                let mut xss = xss.into_iter();
+                let mut y = match xss.next() {
+                    Some(xs) => BTreeSet::from_iter(xs),
+                    None => BTreeSet::new(),
+                };
+
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
             }
+        }
+    }
 
-            let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Difference { slices: xss }.into_set_buf()
-            };
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
 
-            let mut xss = xss.into_iter();
-            let mut y = match xss.next() {
-                Some(xs) => BTreeSet::from_iter(xs),
-                None => BTreeSet::new(),
-            };
+        #[test]
+        fn no_slice() {
+            let difference = Difference { slices: vec![] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[]);
+        }
 
-            for v in xss {
-                let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.difference(&x).cloned().collect();
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
+
+            let difference = Difference { slices: vec![a] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[]);
+        }
+
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
+
+            let difference = Difference { slices: vec![a] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[1, 2, 3]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[1, 2, 3]);
+        }
+
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 4];
+
+            let difference = Difference { slices: vec![a, b] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[1, 3]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[1, 3]);
+        }
+
+        #[test]
+        fn two_slices_special_case() {
+            let a = &[1, 2, 3];
+            let b = &[3];
+
+            let difference = Difference { slices: vec![a, b] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[1, 2]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[1, 2]);
+        }
+
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3, 6, 7];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5, 7];
+
+            let difference = Difference { slices: vec![a, b, c] };
+            let diff_ref: Vec<i32> = difference.iter().cloned().collect();
+            assert_eq!(&diff_ref[..], &[1, 6]);
+            let diff_own: Vec<i32> = difference.into_iter().cloned().collect();
+            assert_eq!(&diff_own[..], &[1, 6]);
+        }
+
+        quickcheck! {
+            fn qc_difference(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: Vec<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Difference { slices: xss }.into_iter().cloned().collect()
+                };
+
+                let mut xss = xss.into_iter();
+                let mut y = match xss.next() {
+                    Some(xs) => BTreeSet::from_iter(xs),
+                    None => BTreeSet::new(),
+                };
+
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.difference(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
             }
-            let y: Vec<_> = y.into_iter().collect();
-
-            x.as_slice() == y.as_slice()
         }
     }
 }

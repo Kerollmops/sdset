@@ -71,6 +71,13 @@ impl<'a, T: Ord> Union<'a, T> {
         }
         Ok(())
     }
+
+    fn iter(&self) -> UnionIter<'a, T>
+    {
+        UnionIter {
+            slices: self.slices.clone(),
+        }
+    }
 }
 
 impl<'a, T: Ord + Clone> SetOperation<T> for Union<'a, T> {
@@ -89,95 +96,264 @@ impl<'a, T: Ord> SetOperation<&'a T> for Union<'a, T> {
     }
 }
 
+impl<'a, T: Ord> IntoIterator for Union<'a, T> {
+    type Item = &'a T;
+    type IntoIter = UnionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        UnionIter {
+            slices: self.slices,
+        }
+    }
+}
+
+impl<'a, T: Ord> IntoIterator for &'a Union<'a, T> {
+    type Item = &'a T;
+    type IntoIter = UnionIter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct UnionIter<'a, T> {
+    slices: Vec<&'a [T]>,
+}
+
+impl<'a, T: Ord> Iterator for UnionIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match two_minimums(&self.slices) {
+                Two((i, f), (_, s)) => {
+                    if f != s {
+                        let result = &self.slices[i][0];
+                        self.slices[i] = &self.slices[i][1..];
+                        return Some(result);
+                    } else {
+                        for slice in &mut self.slices {
+                            if slice.first() == Some(s) {
+                                *slice = &slice[1..];
+                            }
+                        }
+                        return Some(s);
+                    }
+                    
+                },
+                One((i, _)) => {
+                    let result = &self.slices[i][0];
+                    self.slices[i] = &self.slices[i][1..];
+                    return Some(result);
+                },
+                Nothing => { return None; },
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::set::{sort_dedup_vec, SetBuf};
+    mod set_to_set {
+        use super::super::*;
+        use crate::set::{sort_dedup_vec, SetBuf};
 
-    #[test]
-    fn no_slice() {
-        let union_: SetBuf<i32> = Union { slices: vec![] }.into_set_buf();
-        assert_eq!(&union_[..], &[]);
-    }
+        #[test]
+        fn no_slice() {
+            let union_: SetBuf<i32> = Union { slices: vec![] }.into_set_buf();
+            assert_eq!(&union_[..], &[]);
+        }
 
-    #[test]
-    fn one_empty_slice() {
-        let a: &[i32] = &[];
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
-        assert_eq!(&union_[..], &[]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
+            assert_eq!(&union_[..], &[]);
+        }
 
-    #[test]
-    fn one_slice() {
-        let a = &[1, 2, 3];
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a] }.into_set_buf();
+            assert_eq!(&union_[..], &[1, 2, 3]);
+        }
 
-    #[test]
-    fn two_slices_equal() {
-        let a = &[1, 2, 3];
-        let b = &[1, 2, 3];
+        #[test]
+        fn two_slices_equal() {
+            let a = &[1, 2, 3];
+            let b = &[1, 2, 3];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&union_[..], &[1, 2, 3]);
+        }
 
-    #[test]
-    fn two_slices_little() {
-        let a = &[1];
-        let b = &[2];
+        #[test]
+        fn two_slices_little() {
+            let a = &[1];
+            let b = &[2];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&union_[..], &[1, 2]);
+        }
 
-    #[test]
-    fn two_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3, 4]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a, b] }.into_set_buf();
+            assert_eq!(&union_[..], &[1, 2, 3, 4]);
+        }
 
-    #[test]
-    fn three_slices() {
-        let a = &[1, 2, 3];
-        let b = &[2, 3, 4];
-        let c = &[3, 4, 5];
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5];
 
-        let union_: SetBuf<i32> = Union { slices: vec![a, b, c] }.into_set_buf();
-        assert_eq!(&union_[..], &[1, 2, 3, 4, 5]);
-    }
+            let union_: SetBuf<i32> = Union { slices: vec![a, b, c] }.into_set_buf();
+            assert_eq!(&union_[..], &[1, 2, 3, 4, 5]);
+        }
 
-    quickcheck! {
-        fn qc_union(xss: Vec<Vec<i32>>) -> bool {
-            use std::collections::BTreeSet;
-            use std::iter::FromIterator;
+        quickcheck! {
+            fn qc_union(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
 
-            // FIXME temporary hack (can have mutable parameters!)
-            let mut xss = xss;
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
 
-            for xs in &mut xss {
-                sort_dedup_vec(xs);
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: SetBuf<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Union { slices: xss }.into_set_buf()
+                };
+
+                let mut y = BTreeSet::new();
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.union(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
             }
+        }
+    }
+    
+    mod set_to_iter {
+        use super::super::*;
+        use crate::set::sort_dedup_vec;
 
-            let x: SetBuf<i32> = {
-                let xss = xss.iter().map(|xs| xs.as_slice()).collect();
-                Union { slices: xss }.into_set_buf()
-            };
+        #[test]
+        fn no_slice() {
+            let union = Union { slices: vec![] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[]);
+        }
 
-            let mut y = BTreeSet::new();
-            for v in xss {
-                let x = BTreeSet::from_iter(v.iter().cloned());
-                y = y.union(&x).cloned().collect();
+        #[test]
+        fn one_empty_slice() {
+            let a: &[i32] = &[];
+
+            let union = Union { slices: vec![a] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[]);
+        }
+
+        #[test]
+        fn one_slice() {
+            let a = &[1, 2, 3];
+
+            let union = Union { slices: vec![a] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[1, 2, 3]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[1, 2, 3]);
+        }
+
+        #[test]
+        fn two_slices_equal() {
+            let a = &[1, 2, 3];
+            let b = &[1, 2, 3];
+            
+            let union = Union { slices: vec![a, b] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[1, 2, 3]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[1, 2, 3]);
+        }
+
+        #[test]
+        fn two_slices_little() {
+            let a = &[1];
+            let b = &[2];
+
+            let union = Union { slices: vec![a, b] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[1, 2]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[1, 2]);
+        }
+
+        #[test]
+        fn two_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+
+            let union = Union { slices: vec![a, b] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[1, 2, 3, 4]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[1, 2, 3, 4]);
+        }
+
+        #[test]
+        fn three_slices() {
+            let a = &[1, 2, 3];
+            let b = &[2, 3, 4];
+            let c = &[3, 4, 5];
+
+            let union = Union { slices: vec![a, b, c] };
+            let union_ref: Vec<i32> = union.iter().cloned().collect();
+            assert_eq!(&union_ref[..], &[1, 2, 3, 4, 5]);
+            let union_own: Vec<i32> = union.into_iter().cloned().collect();
+            assert_eq!(&union_own[..], &[1, 2, 3, 4, 5]);
+        }
+
+        quickcheck! {
+            fn qc_union(xss: Vec<Vec<i32>>) -> bool {
+                use std::collections::BTreeSet;
+                use std::iter::FromIterator;
+
+                // FIXME temporary hack (can have mutable parameters!)
+                let mut xss = xss;
+
+                for xs in &mut xss {
+                    sort_dedup_vec(xs);
+                }
+
+                let x: Vec<i32> = {
+                    let xss = xss.iter().map(|xs| xs.as_slice()).collect();
+                    Union { slices: xss }.into_iter().cloned().collect()
+                };
+
+                let mut y = BTreeSet::new();
+                for v in xss {
+                    let x = BTreeSet::from_iter(v.iter().cloned());
+                    y = y.union(&x).cloned().collect();
+                }
+                let y: Vec<_> = y.into_iter().collect();
+
+                x.as_slice() == y.as_slice()
             }
-            let y: Vec<_> = y.into_iter().collect();
-
-            x.as_slice() == y.as_slice()
         }
     }
 }
