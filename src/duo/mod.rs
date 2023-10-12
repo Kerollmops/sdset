@@ -24,11 +24,13 @@ mod union;
 mod difference;
 mod difference_by_key;
 mod intersection;
+mod intersection_by_key;
 mod symmetric_difference;
 
 pub use self::union::Union;
 pub use self::difference::Difference;
 pub use self::difference_by_key::DifferenceByKey;
+pub use self::intersection_by_key::IntersectionByKey;
 pub use self::intersection::Intersection;
 pub use self::symmetric_difference::SymmetricDifference;
 
@@ -95,5 +97,10 @@ where F: Fn(&T) -> K,
     /// Prepare the two slices for the _difference_ set operation.
     pub fn difference(self) -> DifferenceByKey<'a, T, U, F, G, K> {
         DifferenceByKey::new(self.a, self.b, self.f, self.g)
+    }
+
+    /// Prepare the two slices for the _intersection_ set operation.
+    pub fn intersection(self) -> IntersectionByKey<'a, T, U, F, G, K> {
+        IntersectionByKey::new(self.a, self.b, self.f, self.g)
     }
 }
